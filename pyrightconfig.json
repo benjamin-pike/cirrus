@@ -1,0 +1,7 @@
+{
+    "typeCheckingMode": "strict",
+    "reportWildcardImportFromLibrary": "none",
+    "exclude": [
+        "**/__pycache__"
+    ]
+}

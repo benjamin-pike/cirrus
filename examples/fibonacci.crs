@@ -1,0 +1,18 @@
+func main = [] >> {
+    let n = 10;
+    let a = 0;
+    let b = 1;
+
+    echo a;
+    echo b;
+
+    range i in 2 to n {
+        let next = a + b;
+        echo next;
+        
+        a = b;
+        b = next;
+    }
+}
+
+main();
