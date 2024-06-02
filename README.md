@@ -3,6 +3,35 @@
 ## Introduction
 Cirrus is designed to be a readable and intuitive programming language inspired by the most useful features of modern high-level languages. It features strong and static typing, curly-brace syntax for block delimiters, functional programming constructs, and a clean syntax for defining functions and chaining operations.
 
+## Setup
+
+### Cloning the Repository
+First, you need to clone the repository to your local machine. Open your terminal and run the following command:
+```
+git clone https://github.com/benjamin-pike/cirrus.git
+cd cirrus
+```
+
+### Running the Setup Script
+To ensure the development environment is configured correctly, you should run the project setup script. To do so, execute the following command in your terminal:
+```
+python setup.py
+```
+
+### What the Setup Script Does
+
+1. **Validates Python Version**:
+   - Ensures that you are using Python 3.10 or later. I recommend using `pyenv` to manage your Python versions.
+
+2. **Installs Required Packages**:
+   - Installs all necessary packages specified in the `requirements.txt` file using pip.
+
+3. **Installs Pre-commit Hook**:
+   - Installs the `pre-commit` package and sets up the pre-commit hook to ensure code quality checks before committing changes.
+
+4. **Adds Source Directory to System Path**:
+   - Adds the `src` directory to the system path, allowing you to run the project from the command line without path issues.
+
 ## Development Roadmap
 ### Phase 1: Initial Implementation
 - Develop the lexer to tokenise the source code.

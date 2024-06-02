@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Example",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/main.py",
+            "console": "integratedTerminal",
+            "args": ["./examples/fibonacci.crs"]
+        },
+        {
+            "name": "Run REPL",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/repl.py",
+            "console": "integratedTerminal"
+        }
+    ]
+}
