@@ -14,7 +14,7 @@ def parse_code(code: str) -> Program:
 def check_valid(code: str, expected: Program):
     program = parse_code(code)
     assert repr(program) == repr(expected)
-    
+
 def check_invalid(code: str):
     with pytest.raises(SyntaxError):
         parse_code(code)
@@ -67,7 +67,7 @@ def test_if_statement():
         )
     ])
     check_valid(code, expected)
-    
+
 def test_nested_if_else():
     code = """
         if (x > 5) {
@@ -94,7 +94,7 @@ def test_nested_if_else():
         )
     ])
     check_valid(code, expected)
-    
+
 def test_while_statement():
     code = """
         while (x < 10) {
@@ -166,7 +166,7 @@ def test_each_statement():
             return x;
         }
     """
-    
+
     expected = Program([
         EachStatement(
             "x",
@@ -174,16 +174,14 @@ def test_each_statement():
             BlockStatement([ReturnStatement(Identifier("x"))])
         )
     ])
-    
     check_valid(code, expected)
-    
+
 def test_range_statement():
     code = """
         range x in 0 to 10 {
             return x;
         }
     """
-    
     expected = Program([
         RangeStatement(
             "x",
@@ -193,13 +191,12 @@ def test_range_statement():
             BlockStatement([ReturnStatement(Identifier("x"))])
         )
     ])
-    
     check_valid(code, expected)
 
 def test_function_declaration():
     code = """
         func add = [a, b] >> {
-            return a + b; 
+            return a + b;
         }
     """
     expected = Program([
@@ -235,15 +232,69 @@ def test_combined_function_example():
     ])
     check_valid(code, expected)
 
+def test_pipe_expression_single():
+    code = """
+        [[1, 2, 3]] >> map(triple);
+    """
+    expected = Program([
+        ExpressionStatement(
+            PipeExpression(
+                [ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)])],
+                [CallExpression(Identifier("map"), [Identifier("triple")])]
+            )
+        )
+    ])
+    check_valid(code, expected)
+
+def test_pipe_expression_multiple():
+    code = """
+        [[1, 2, 3]] >> map(triple) >> filter(isEven) >> reduce(add);
+    """
+    expected = Program([
+        ExpressionStatement(
+            PipeExpression(
+                [ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)])],
+                [
+                    CallExpression(Identifier("map"), [Identifier("triple")]),
+                    CallExpression(Identifier("filter"), [Identifier("isEven")]),
+                    CallExpression(Identifier("reduce"), [Identifier("add")])
+                ]
+            )
+        )
+    ])
+    check_valid(code, expected)
+
+def test_complex_pipe_expression():
+    code = """
+        let x = [[1, 2], [3, 4]]
+            >> reduce(add)
+            >> map(triple)
+            >> sum;
+    """
+    expected = Program([
+        VariableDeclaration("x", PipeExpression(
+            [
+                ArrayLiteral([NumericLiteral(1), NumericLiteral(2)]),
+                ArrayLiteral([NumericLiteral(3), NumericLiteral(4)])
+            ],
+            [
+                CallExpression(Identifier("reduce"), [Identifier("add")]),
+                CallExpression(Identifier("map"), [Identifier("triple")]),
+                Identifier("sum")
+            ]
+        ))
+    ])
+    check_valid(code, expected)
+
 # Invalid syntax tests
 def test_invalid_syntax_missing_semicolon():
     code = "let x = 5"
     check_invalid(code)
-    
+
 def test_invalid_unterminated_string_literal():
     code = "echo 'hello world;"
     check_invalid(code)
-    
+
 def test_invalid_syntax_unmatched_bracket():
     code = "let x = [1, 2, 3;"
     check_invalid(code)

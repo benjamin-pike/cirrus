@@ -30,7 +30,7 @@ class VariableDeclaration(Statement):
 """
 2.  Expression Statement
     Syntax: <expression>;
-    
+
     5 + 5;
 """
 class ExpressionStatement(Statement):
@@ -39,11 +39,11 @@ class ExpressionStatement(Statement):
         self.expression = expression
     def __repr__(self) -> str:
         return f'ExpressionStatement({self.expression})'
-    
+
 """
 3.  Block Statement
     Syntax: { <statements> }
-    
+
     {
         let x = 5;
         let y = 10;
@@ -60,7 +60,7 @@ class BlockStatement(Statement):
 """
 4. If Statement
     Syntax: if <condition> <then_branch> else <else_branch>
-    
+
     if x > 5 {
         return x;
     } else {
@@ -80,7 +80,7 @@ class IfStatement(Statement):
 """
 5. While Statement
     Syntax: while <condition> <body>
-    
+
     while x < 5 {
         x = x + 1;
     }
@@ -113,7 +113,7 @@ class RangeStatement(Statement):
 
     def __repr__(self) -> str:
         return f'RangeStatement({self.identifier}, {self.start}, {self.end}, {self.increment}, {self.body})'
-        
+
 
 """
 7.  Each Statement
@@ -150,7 +150,7 @@ class ReturnStatement(Statement):
 """
 9.  Function Declaration
     Syntax: func <name> = [<parameters>] >> <body>
-    
+
     func add = [x, y] >> {
         return x + y;
     }
@@ -164,11 +164,11 @@ class FunctionDeclaration(Statement):
 
     def __repr__(self) -> str:
         return f'FunctionDeclaration({self.name}, {self.parameters}, {self.body})'
-    
+
 """
 10. Echo Statement
     Syntax: echo <expression>;
-    
+
     echo "Hello, World!";
 """
 class EchoStatement(Statement):
@@ -185,25 +185,25 @@ class NumericLiteral(Expression):
         self.value = value
     def __repr__(self) -> str:
         return f'NumericLiteral({self.value})'
-    
+
 class StringLiteral(Expression):
     def __init__(self, value: str) -> None:
         self.value = value
     def __repr__(self) -> str:
         return f'StringLiteral({self.value})'
-    
+
 class BooleanLiteral(Expression):
     def __init__(self, value: bool) -> None:
         self.value = value
     def __repr__(self) -> str:
         return f'BooleanLiteral({self.value})'
-    
+
 class NullLiteral(Expression):
     def __init__(self) -> None:
         self.value = None
     def __repr__(self) -> str:
         return f'NullLiteral()'
-    
+
 class ArrayLiteral(Expression):
     def __init__(self, elements: List[Expression]) -> None:
         self.elements = elements
@@ -215,7 +215,7 @@ class Identifier(Expression):
         self.name = name
     def __repr__(self) -> str:
         return f'Identifier({self.name})'
-    
+
 class UnaryExpression(Expression):
     def __init__(self, operator: TokenType, operand: Expression, position: Literal['PRE', 'POST']) -> None:
         self.operator = operator
@@ -231,7 +231,7 @@ class BinaryExpression(Expression):
         self.right = right
     def __repr__(self) -> str:
         return f'BinaryExpression({self.left}, {self.operator}, {self.right})'
-    
+
 class AssignmentExpression(Expression):
     def __init__(self, left: Node, right: Node) -> None:
         self.left = left
@@ -245,10 +245,19 @@ class IndexExpression(Expression):
         self.index = index
     def __repr__(self) -> str:
         return f'IndexExpression({self.array}, {self.index})'
-    
+
 class CallExpression(Expression):
-    def __init__(self, callee: Node, arguments: List[Expression]) -> None:
+    def __init__(self, callee: Node, args: List[Expression]) -> None:
         self.callee = callee
-        self.arguments = arguments
+        self.args = args
     def __repr__(self) -> str:
-        return f'FunctionCall({self.callee}, {self.arguments})'
+        return f'FunctionCall({self.callee}, {self.args})'
+
+
+class PipeExpression(Expression):
+    def __init__(self, args: List[Expression], functions: List[Expression]) -> None:
+        self.args = args
+        self.functions = functions
+
+    def __repr__(self) -> str:
+        return f'PipeExpression({self.args}, {self.functions})'
