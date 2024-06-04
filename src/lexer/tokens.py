@@ -72,6 +72,10 @@ class TokenType(Enum):
     SINGLE_QUOTE = auto()       # '\''
     STRING = auto()
 
+    # Comments
+    EOL_COMMENT = auto()        # "// ... \n"
+    DELIMITED_COMMENT = auto()  # "/* ... */"
+
     # End of file
     EOF = auto()
 
@@ -109,6 +113,9 @@ spec = (
     (TokenType.SEMICOLON, r';'),
     (TokenType.ARROW, r'>>'),
     (TokenType.RETURN_ARROW, r'->'),
+
+    (TokenType.EOL_COMMENT, r'//.*\n'),
+    (TokenType.DELIMITED_COMMENT, r'/\*[\s\S]*?(?:\*/|$)'),
 
     (TokenType.LOGICAL_AND, r'&&'),
     (TokenType.LOGICAL_OR, r'\|\|'),

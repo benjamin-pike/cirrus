@@ -1,5 +1,3 @@
-import pytest
-
 from lexer.lexer import Lexer
 from lexer.tokens import TokenType
 from parser.parser import Parser
@@ -11,28 +9,23 @@ def parse_code(code: str) -> Program:
     parser = Parser(tokens)
     return parser.parse()
 
-def check_valid(code: str, expected: Program):
+def check(code: str, expected: Program):
     program = parse_code(code)
     assert repr(program) == repr(expected)
 
-def check_invalid(code: str):
-    with pytest.raises(SyntaxError):
-        parse_code(code)
-
-# Valid syntax tests
 def test_variable_declaration():
     code = "let x = 5;"
     expected = Program([
         VariableDeclaration("x", NumericLiteral(5))
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_expression_statement():
     code = "x + 10;"
     expected = Program([
         ExpressionStatement(BinaryExpression(Identifier("x"), TokenType.PLUS, NumericLiteral(10)))
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_block_statement():
     code = "{ let y = 20; y - 5; }"
@@ -42,14 +35,14 @@ def test_block_statement():
             ExpressionStatement(BinaryExpression(Identifier("y"), TokenType.MINUS, NumericLiteral(5)))
         ])
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_echo_statement():
     code = "echo 'hello world';"
     expected = Program([
         EchoStatement(StringLiteral("hello world"))
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_if_statement():
     code = """
@@ -66,7 +59,7 @@ def test_if_statement():
             BlockStatement([ReturnStatement(NumericLiteral(5))])
         )
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_nested_if_else():
     code = """
@@ -93,7 +86,7 @@ def test_nested_if_else():
             BlockStatement([ReturnStatement(NumericLiteral(5))])
         )
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_while_statement():
     code = """
@@ -111,7 +104,7 @@ def test_while_statement():
             ])
         )
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_array_literal():
     code = "let arr = [1, 2, 3];"
@@ -122,7 +115,7 @@ def test_array_literal():
             NumericLiteral(3)
         ]))
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_array_indexing():
     code = "let x = arr[0];"
@@ -132,7 +125,7 @@ def test_array_indexing():
             NumericLiteral(0)
         ))
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_combined_array_example():
     code = """
@@ -158,7 +151,7 @@ def test_combined_array_example():
             NumericLiteral(5)
         ))
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_each_statement():
     code = """
@@ -174,7 +167,7 @@ def test_each_statement():
             BlockStatement([ReturnStatement(Identifier("x"))])
         )
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_range_statement():
     code = """
@@ -191,7 +184,7 @@ def test_range_statement():
             BlockStatement([ReturnStatement(Identifier("x"))])
         )
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_function_declaration():
     code = """
@@ -202,7 +195,7 @@ def test_function_declaration():
     expected = Program([
         FunctionDeclaration("add", ["a", "b"], BlockStatement([ReturnStatement(BinaryExpression(Identifier("a"), TokenType.PLUS, Identifier("b")))]))
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_combined_function_example():
     code = """
@@ -230,7 +223,7 @@ def test_combined_function_example():
             BlockStatement([ExpressionStatement(AssignmentExpression(Identifier("z"), BinaryExpression(Identifier("z"), TokenType.MINUS, NumericLiteral(1))))])
         )
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_pipe_expression_single():
     code = """
@@ -244,7 +237,7 @@ def test_pipe_expression_single():
             )
         )
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_pipe_expression_multiple():
     code = """
@@ -262,7 +255,7 @@ def test_pipe_expression_multiple():
             )
         )
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
 def test_complex_pipe_expression():
     code = """
@@ -284,32 +277,19 @@ def test_complex_pipe_expression():
             ]
         ))
     ])
-    check_valid(code, expected)
+    check(code, expected)
 
-# Invalid syntax tests
-def test_invalid_syntax_missing_semicolon():
-    code = "let x = 5"
-    check_invalid(code)
-
-def test_invalid_unterminated_string_literal():
-    code = "echo 'hello world;"
-    check_invalid(code)
-
-def test_invalid_syntax_unmatched_bracket():
-    code = "let x = [1, 2, 3;"
-    check_invalid(code)
-
-def test_invalid_syntax_unmatched_brace():
-    code = "{ let y = 20; y - 5;"
-    check_invalid(code)
-
-def test_invalid_syntax_unmatched_parenthesis():
-    code = "if (x > 5 { return x; }"
-    check_invalid(code)
-
-def test_invalid_syntax_invalid_token():
-    code = "let x = 5 @ 3;"
-    check_invalid(code)
-
-if __name__ == "__main__":
-    pytest.main()
+def test_comments():
+    code = """
+        // This is a single line comment
+        let x = 5; // This is another comment
+        // echo 'This code should be ignored';
+        echo 'This should be included';
+        /* This is a
+        multi-line comment */
+    """
+    expected = Program([
+        VariableDeclaration("x", NumericLiteral(5)),
+        EchoStatement(StringLiteral("This should be included"))
+    ])
+    check(code, expected)

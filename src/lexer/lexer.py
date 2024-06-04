@@ -6,7 +6,7 @@ from lexer.token import Token
 class Lexer:
     """
     The Lexer class is responsible for converting a string of source code into a stream of tokens
-    that can be used by a parser. It uses regular expressions to identify token types based on 
+    that can be used by a parser. It uses regular expressions to identify token types based on
     predefined specifications.
 
     Attributes:
@@ -34,7 +34,7 @@ class Lexer:
 
         Yields:
             Token: The next token in the source code.
-            
+
         Raises:
             SyntaxError: If an invalid token is encountered.
         """
@@ -45,25 +45,30 @@ class Lexer:
 
         while mo is not None:
             token_type: str | None = mo.lastgroup  # Type of the matched token
-            
+
             if token_type is None:
                 raise SyntaxError(f'Invalid token at line {self.line}')
-            
+
             value: str = mo.group(token_type)  # Value of the matched token
 
-            if TokenType[token_type] in [TokenType.DOUBLE_QUOTE, TokenType.SINGLE_QUOTE]:
-                # Handle string literals separately
-                for token in self._match_string(token_type, value):
-                    yield token
-                mo = get_token(self.code, self.pos)
-                continue
-
             match TokenType[token_type]:
+                case TokenType.DOUBLE_QUOTE | TokenType.SINGLE_QUOTE:
+                    # Handle string literals separately
+                    for token in self._match_string(token_type, value):
+                        yield token
+                    mo = get_token(self.code, self.pos)
+                    continue
                 case TokenType.NEWLINE:
-                    self.line += 1 
+                    self.line += 1
                     self.column = 1
                 case TokenType.SKIP:
                     self.column += len(value)  # Skip whitespace
+                case TokenType.EOL_COMMENT:
+                    self.line += 1
+                    self.column = 1
+                case TokenType.DELIMITED_COMMENT:
+                    self.line += value.count('\n')
+                    self.column = len(value.split('\n')[-1]) + 1
                 case TokenType.MISMATCH:
                     raise SyntaxError(f'{value} unexpected on line {self.line}')
                 case _:
@@ -72,9 +77,9 @@ class Lexer:
 
             self.pos = mo.end()  # Update position to the end of the matched token
             mo = get_token(self.code, self.pos)  # Get the next match
-        
+
         yield Token(TokenType.EOF, '', self.line, self.column)  # End of file token
-        
+
     def _match_string(self, token_type: str, value: str) -> Generator[Token, None, None]:
         """
         Handles the tokenization of string literals.
@@ -85,14 +90,14 @@ class Lexer:
 
         Yields:
             Token: Tokens representing parts of the string literal.
-            
+
         Raises:
             SyntaxError: If an unterminated string literal is encountered.
         """
         quote_type = value
-                
+
         yield Token(TokenType[token_type], value, self.line, self.column)  # Yield the opening quote
-        
+
         self.pos += 1
         self.column += 1
 
@@ -103,21 +108,21 @@ class Lexer:
             if self.code[self.pos] == quote_type and self.code[self.pos - 1] != '\\':
                 # Break if non-escaped closing quote is found
                 break
-            
+
             if self.code[self.pos] == '\n':
                 # Support multi-line strings
                 self.line += 1
                 self.column = 1
             else:
-                self.column += 1 
-                
+                self.column += 1
+
             self.pos += 1
-            
+
         if self.pos == len(self.code):
             raise SyntaxError(f"Unterminated string literal starting at line {start_line}")
-        
+
         yield Token(TokenType.STRING, self.code[start_pos:self.pos], start_line, start_col)
         yield Token(TokenType[token_type], value, self.line, self.column)
-        
+
         self.pos += 1
         self.column += 1
