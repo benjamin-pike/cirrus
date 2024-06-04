@@ -1,4 +1,4 @@
-# Cirrus Design Philosophy
+# Cirrus
 
 ## Introduction
 Cirrus is designed to be a readable and intuitive programming language inspired by the most useful features of modern high-level languages. It features strong and static typing, curly-brace syntax for block delimiters, functional programming constructs, and a clean syntax for defining functions and chaining operations.
