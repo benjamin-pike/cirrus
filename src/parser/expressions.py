@@ -1,9 +1,9 @@
 from typing import *
 from lexer.tokens import TokenType
 from parser.helpers import get_precedence
-from parser._types import ParserABC, ExpressionParserABC
+from parser.types import ParserABC, ExpressionParserABC
 from syntax.ast import (
-    Expression, AssignmentExpression, Identifier, BinaryExpression, StringLiteral,
+    BooleanLiteral, Expression, AssignmentExpression, Identifier, BinaryExpression, StringLiteral,
     UnaryExpression, NumericLiteral, CallExpression, ArrayLiteral, IndexExpression,
     PipeExpression
 )
@@ -149,16 +149,21 @@ class ExpressionParser(ExpressionParserABC):
         token = self.parser.current()
 
         match token.type:
-            case TokenType.INT:
-                self.parser.consume(TokenType.INT)
+            case TokenType.INT_LITERAL:
+                self.parser.consume(TokenType.INT_LITERAL)
                 return NumericLiteral(int(token.value))
+            case TokenType.FLOAT_LITERAL:
+                self.parser.consume(TokenType.FLOAT_LITERAL)
+                return NumericLiteral(float(token.value))
             case TokenType.SINGLE_QUOTE | TokenType.DOUBLE_QUOTE:
                 self.parser.consume(token.type)
-                str_token = self.parser.consume(TokenType.STRING)
+                str_token = self.parser.consume(TokenType.STRING_LITERAL)
                 self.parser.consume(token.type)
                 return StringLiteral(str_token.value)
-            case TokenType.IDENTIFIER:
-                return self.parse_identifier_expression()
+            case TokenType.BOOL_LITERAL:
+                self.parser.consume(TokenType.BOOL_LITERAL)
+                return BooleanLiteral(token.value == 'true')
+
             case TokenType.LPAREN:
                 self.parser.consume(TokenType.LPAREN)
                 expr = self.parse_expression()
@@ -166,6 +171,10 @@ class ExpressionParser(ExpressionParserABC):
                 return expr
             case TokenType.LBRACKET:
                 return self.parse_array_literal()
+
+            case TokenType.IDENTIFIER:
+                return self.parse_identifier_expression()
+
             case _:
                 raise SyntaxError(f'Unexpected token {token}')
 

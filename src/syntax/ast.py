@@ -1,9 +1,10 @@
 from typing import *
 from lexer.tokens import TokenType
+from semantic.types import VarType
 
-class Node: pass
-class Statement(Node): pass
-class Expression(Node): pass
+class Node(): ...
+class Statement(Node): ...
+class Expression(Node): ...
 
 # Program
 class Program(Statement):
@@ -20,12 +21,12 @@ class Program(Statement):
     let x = 5;
 """
 class VariableDeclaration(Statement):
-    def __init__(self, name: str, initializer: Node) -> None:
-        self.type = "VariableDeclaration"
+    def __init__(self, name: str, var_type: VarType, initializer: Node) -> None:
         self.name = name
+        self.var_type = var_type
         self.initializer = initializer
     def __repr__(self) -> str:
-        return f'VariableDeclaration({self.name}, {self.initializer})'
+        return f'VariableDeclaration({self.name}, {self.var_type}, {self.initializer})'
 
 """
 2.  Expression Statement
@@ -35,7 +36,6 @@ class VariableDeclaration(Statement):
 """
 class ExpressionStatement(Statement):
     def __init__(self, expression: Node) -> None:
-        self.type = "ExpressionStatement"
         self.expression = expression
     def __repr__(self) -> str:
         return f'ExpressionStatement({self.expression})'
@@ -51,7 +51,6 @@ class ExpressionStatement(Statement):
 """
 class BlockStatement(Statement):
     def __init__(self, statements: List[Statement]) -> None:
-        self.type = "BlockStatement"
         self.statements = statements
 
     def __repr__(self) -> str:
@@ -69,7 +68,6 @@ class BlockStatement(Statement):
 """
 class IfStatement(Statement):
     def __init__(self, condition: Expression, then_block: BlockStatement, else_block: Optional[BlockStatement]) -> None:
-        self.type = "IfStatement"
         self.condition = condition
         self.then_block = then_block
         self.else_block = else_block
@@ -87,7 +85,6 @@ class IfStatement(Statement):
 """
 class WhileStatement(Statement):
     def __init__(self, condition: Expression, body: BlockStatement) -> None:
-        self.type = "WhileStatement"
         self.condition = condition
         self.body = body
 
@@ -104,7 +101,6 @@ class WhileStatement(Statement):
 """
 class RangeStatement(Statement):
     def __init__(self, identifier: str, start: Expression, end: Expression, increment: Expression, body: BlockStatement) -> None:
-        self.type = "RangeStatement"
         self.identifier = identifier
         self.start = start
         self.end = end
@@ -125,7 +121,6 @@ class RangeStatement(Statement):
 """
 class EachStatement(Statement):
     def __init__(self, variable: str, iterable: Expression, body: BlockStatement) -> None:
-        self.type = "EachStatement"
         self.variable = variable
         self.iterable = iterable
         self.body = body
@@ -141,7 +136,6 @@ class EachStatement(Statement):
 """
 class ReturnStatement(Statement):
     def __init__(self, expression: Optional[Expression]) -> None:
-        self.type = "ReturnStatement"
         self.expression = expression
 
     def __repr__(self) -> str:
@@ -157,7 +151,6 @@ class ReturnStatement(Statement):
 """
 class FunctionDeclaration(Statement):
     def __init__(self, name: str, parameters: List[str], body: BlockStatement) -> None:
-        self.type = "FunctionDeclaration"
         self.name = name
         self.parameters = parameters
         self.body = body
@@ -173,7 +166,6 @@ class FunctionDeclaration(Statement):
 """
 class EchoStatement(Statement):
     def __init__(self, expression: Expression) -> None:
-        self.type = "EchoStatement"
         self.expression = expression
 
     def __repr__(self) -> str:
