@@ -1,6 +1,7 @@
 from lexer.lexer import Lexer
 from lexer.tokens import TokenType
 from parser.parser import Parser
+from semantic.types import ArrayType, PrimitiveType
 from syntax.ast import *
 
 def parse_code(code: str) -> Program:
@@ -14,9 +15,9 @@ def check(code: str, expected: Program):
     assert repr(program) == repr(expected)
 
 def test_variable_declaration():
-    code = "let x = 5;"
+    code = "int x = 5;"
     expected = Program([
-        VariableDeclaration("x", NumericLiteral(5))
+        VariableDeclaration("x", PrimitiveType(TokenType.INT), NumericLiteral(5))
     ])
     check(code, expected)
 
@@ -28,11 +29,11 @@ def test_expression_statement():
     check(code, expected)
 
 def test_block_statement():
-    code = "{ let y = 20; y - 5; }"
+    code = "{ float y = 1.5; y - 1; }"
     expected = Program([
         BlockStatement([
-            VariableDeclaration("y", NumericLiteral(20)),
-            ExpressionStatement(BinaryExpression(Identifier("y"), TokenType.MINUS, NumericLiteral(5)))
+            VariableDeclaration("y", PrimitiveType(TokenType.FLOAT), NumericLiteral(1.5)),
+            ExpressionStatement(BinaryExpression(Identifier("y"), TokenType.MINUS, NumericLiteral(1)))
         ])
     ])
     check(code, expected)
@@ -46,7 +47,7 @@ def test_echo_statement():
 
 def test_if_statement():
     code = """
-        if (x > 5) {
+        if x > 5 {
             return x;
         } else {
             return 5;
@@ -63,8 +64,9 @@ def test_if_statement():
 
 def test_nested_if_else():
     code = """
-        if (x > 5) {
-            if (y < 10) {
+        bool is_true = true;
+        if x > 5 {
+            if is_true {
                 return y;
             } else {
                 return x;
@@ -74,11 +76,12 @@ def test_nested_if_else():
         }
     """
     expected = Program([
+        VariableDeclaration("is_true", PrimitiveType(TokenType.BOOL), BooleanLiteral(True)),
         IfStatement(
             BinaryExpression(Identifier("x"), TokenType.GT, NumericLiteral(5)),
             BlockStatement([
                 IfStatement(
-                    BinaryExpression(Identifier("y"), TokenType.LT, NumericLiteral(10)),
+                    Identifier("is_true"),
                     BlockStatement([ReturnStatement(Identifier("y"))]),
                     BlockStatement([ReturnStatement(Identifier("x"))])
                 )
@@ -107,42 +110,54 @@ def test_while_statement():
     check(code, expected)
 
 def test_array_literal():
-    code = "let arr = [1, 2, 3];"
+    code = "int[] arr = [1, 2, 3];"
     expected = Program([
-        VariableDeclaration("arr", ArrayLiteral([
-            NumericLiteral(1),
-            NumericLiteral(2),
-            NumericLiteral(3)
-        ]))
+        VariableDeclaration("arr",
+            ArrayType(PrimitiveType(TokenType.INT)),
+            ArrayLiteral([
+                NumericLiteral(1),
+                NumericLiteral(2),
+                NumericLiteral(3)
+            ])
+        )
     ])
     check(code, expected)
 
 def test_array_indexing():
-    code = "let x = arr[0];"
+    code = "int[] x = arr[0];"
     expected = Program([
-        VariableDeclaration("x", IndexExpression(
-            Identifier("arr"),
-            NumericLiteral(0)
-        ))
+        VariableDeclaration("x",
+            ArrayType(PrimitiveType(TokenType.INT)),
+            IndexExpression(
+                Identifier("arr"),
+                NumericLiteral(0)
+            )
+        )
     ])
     check(code, expected)
 
 def test_combined_array_example():
     code = """
-        let arr = [1, 2, 3];
-        let x = arr[1];
+        int[] arr = [1, 2, 3];
+        int x = arr[1];
         arr[2] = 5;
     """
     expected = Program([
-        VariableDeclaration("arr", ArrayLiteral([
-            NumericLiteral(1),
-            NumericLiteral(2),
-            NumericLiteral(3)
-        ])),
-        VariableDeclaration("x", IndexExpression(
-            Identifier("arr"),
-            NumericLiteral(1)
-        )),
+        VariableDeclaration("arr",
+            ArrayType(PrimitiveType(TokenType.INT)),
+            ArrayLiteral([
+                NumericLiteral(1),
+                NumericLiteral(2),
+                NumericLiteral(3)
+            ])
+        ),
+        VariableDeclaration("x",
+            PrimitiveType(TokenType.INT),
+            IndexExpression(
+                Identifier("arr"),
+                NumericLiteral(1)
+            )
+        ),
         ExpressionStatement(AssignmentExpression(
             IndexExpression(
                 Identifier("arr"),
@@ -199,7 +214,7 @@ def test_function_declaration():
 
 def test_combined_function_example():
     code = """
-        let z = 15;
+        int z = 15;
         func multiply = [x, y] >> {
             return x * y;
         }
@@ -211,7 +226,7 @@ def test_combined_function_example():
         }
     """
     expected = Program([
-        VariableDeclaration("z", NumericLiteral(15)),
+        VariableDeclaration("z", PrimitiveType(TokenType.INT), NumericLiteral(15)),
         FunctionDeclaration("multiply", ["x", "y"], BlockStatement([ReturnStatement(BinaryExpression(Identifier("x"), TokenType.MULTIPLY, Identifier("y")))])),
         IfStatement(
             BinaryExpression(Identifier("z"), TokenType.GT, NumericLiteral(10)),
@@ -259,13 +274,13 @@ def test_pipe_expression_multiple():
 
 def test_complex_pipe_expression():
     code = """
-        let x = [[1, 2], [3, 4]]
+        int[] x = [[1, 2], [3, 4]]
             >> reduce(add)
             >> map(triple)
             >> sum;
     """
     expected = Program([
-        VariableDeclaration("x", PipeExpression(
+        VariableDeclaration("x", ArrayType(PrimitiveType(TokenType.INT)), PipeExpression(
             [
                 ArrayLiteral([NumericLiteral(1), NumericLiteral(2)]),
                 ArrayLiteral([NumericLiteral(3), NumericLiteral(4)])
@@ -282,14 +297,14 @@ def test_complex_pipe_expression():
 def test_comments():
     code = """
         // This is a single line comment
-        let x = 5; // This is another comment
+        int x = 5; // This is another comment
         // echo 'This code should be ignored';
         echo 'This should be included';
         /* This is a
         multi-line comment */
     """
     expected = Program([
-        VariableDeclaration("x", NumericLiteral(5)),
+        VariableDeclaration("x", PrimitiveType(TokenType.INT), NumericLiteral(5)),
         EchoStatement(StringLiteral("This should be included"))
     ])
     check(code, expected)

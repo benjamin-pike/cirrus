@@ -2,7 +2,6 @@ from enum import Enum, auto
 
 class TokenType(Enum):
     # Keywords
-    LET = auto()                # "let"
     RETURN = auto()             # "return"
     IF = auto()                 # "if"
     ELSE = auto()               # "else"
@@ -14,6 +13,12 @@ class TokenType(Enum):
     IN = auto()                 # "in"
     TO = auto()                 # "to"
     BY = auto()                 # "by"
+
+    INT = auto()                # "int"
+    FLOAT = auto()              # "float"
+    BOOL = auto()               # "bool"
+    STRING = auto()             # "string"
+    AUTO = auto()               # "auto"
 
     # Identifiers
     IDENTIFIER = auto()
@@ -30,11 +35,12 @@ class TokenType(Enum):
     ARROW = auto()              # ">>"
     RETURN_ARROW = auto()       # "->"
 
-    # Primitives
-    INT = auto()
-    FLOAT = auto()
-    BOOL = auto()
-    NULL = auto()
+    # Literals
+    INT_LITERAL = auto()
+    FLOAT_LITERAL = auto()
+    BOOL_LITERAL = auto()
+    NULL_LITERAL = auto()
+    STRING_LITERAL = auto()
 
     # Operators
     # Arithmetic
@@ -67,10 +73,9 @@ class TokenType(Enum):
     INCREMENT = auto()          # "++"
     DECREMENT = auto()          # "--"
 
-    # String tokens
+    # String delimiters
     DOUBLE_QUOTE = auto()       # '"'
     SINGLE_QUOTE = auto()       # '\''
-    STRING = auto()
 
     # Comments
     EOL_COMMENT = auto()        # "// ... \n"
@@ -90,7 +95,6 @@ class TokenType(Enum):
     a PLUS_ASSIGN token, not a PLUS token followed by a ASSIGN token.
 '''
 spec = (
-    (TokenType.LET, r'\blet\b'),
     (TokenType.RETURN, r'\breturn\b'),
     (TokenType.IF, r'\bif\b'),
     (TokenType.ELSE, r'\belse\b'),
@@ -102,6 +106,11 @@ spec = (
     (TokenType.IN, r'\bin\b'),
     (TokenType.TO, r'\bto\b'),
     (TokenType.BY, r'\bby\b'),
+
+    (TokenType.INT, r'\bint\b'),
+    (TokenType.FLOAT, r'\bfloat\b'),
+    (TokenType.BOOL, r'\bbool\b'),
+    (TokenType.STRING, r'\bstring\b'),
 
     (TokenType.LPAREN, r'\('),
     (TokenType.RPAREN, r'\)'),
@@ -142,10 +151,10 @@ spec = (
     (TokenType.MULTIPLY, r'\*'),
     (TokenType.DIVIDE, r'/'),
 
-    (TokenType.BOOL, r'\btrue\b|\bfalse\b'),
-    (TokenType.NULL, r'\bnull\b'),
-    (TokenType.FLOAT, r'\d+\.\d+'),
-    (TokenType.INT, r'\d+'),
+    (TokenType.BOOL_LITERAL, r'\btrue\b|\bfalse\b'),
+    (TokenType.NULL_LITERAL, r'\bnull\b'),
+    (TokenType.FLOAT_LITERAL, r'\d+\.\d+'),
+    (TokenType.INT_LITERAL, r'\d+'),
 
     (TokenType.DOUBLE_QUOTE, r'"'),
     (TokenType.SINGLE_QUOTE, r'\''),

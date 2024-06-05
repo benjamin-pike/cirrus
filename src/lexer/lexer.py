@@ -121,7 +121,7 @@ class Lexer:
         if self.pos == len(self.code):
             raise SyntaxError(f"Unterminated string literal starting at line {start_line}")
 
-        yield Token(TokenType.STRING, self.code[start_pos:self.pos], start_line, start_col)
+        yield Token(TokenType.STRING_LITERAL, self.code[start_pos:self.pos], start_line, start_col)
         yield Token(TokenType[token_type], value, self.line, self.column)
 
         self.pos += 1
