@@ -1,9 +1,10 @@
 from typing import *
 from lexer.tokens import TokenType
+from semantic.types import VarType
 
-class Node: pass
-class Statement(Node): pass
-class Expression(Node): pass
+class Node(): ...
+class Statement(Node): ...
+class Expression(Node): ...
 
 # Program
 class Program(Statement):
@@ -20,30 +21,29 @@ class Program(Statement):
     let x = 5;
 """
 class VariableDeclaration(Statement):
-    def __init__(self, name: str, initializer: Node) -> None:
-        self.type = "VariableDeclaration"
+    def __init__(self, name: str, var_type: VarType, initializer: Node) -> None:
         self.name = name
+        self.var_type = var_type
         self.initializer = initializer
     def __repr__(self) -> str:
-        return f'VariableDeclaration({self.name}, {self.initializer})'
+        return f'VariableDeclaration({self.name}, {self.var_type}, {self.initializer})'
 
 """
 2.  Expression Statement
     Syntax: <expression>;
-    
+
     5 + 5;
 """
 class ExpressionStatement(Statement):
     def __init__(self, expression: Node) -> None:
-        self.type = "ExpressionStatement"
         self.expression = expression
     def __repr__(self) -> str:
         return f'ExpressionStatement({self.expression})'
-    
+
 """
 3.  Block Statement
     Syntax: { <statements> }
-    
+
     {
         let x = 5;
         let y = 10;
@@ -51,7 +51,6 @@ class ExpressionStatement(Statement):
 """
 class BlockStatement(Statement):
     def __init__(self, statements: List[Statement]) -> None:
-        self.type = "BlockStatement"
         self.statements = statements
 
     def __repr__(self) -> str:
@@ -60,7 +59,7 @@ class BlockStatement(Statement):
 """
 4. If Statement
     Syntax: if <condition> <then_branch> else <else_branch>
-    
+
     if x > 5 {
         return x;
     } else {
@@ -69,7 +68,6 @@ class BlockStatement(Statement):
 """
 class IfStatement(Statement):
     def __init__(self, condition: Expression, then_block: BlockStatement, else_block: Optional[BlockStatement]) -> None:
-        self.type = "IfStatement"
         self.condition = condition
         self.then_block = then_block
         self.else_block = else_block
@@ -80,14 +78,13 @@ class IfStatement(Statement):
 """
 5. While Statement
     Syntax: while <condition> <body>
-    
+
     while x < 5 {
         x = x + 1;
     }
 """
 class WhileStatement(Statement):
     def __init__(self, condition: Expression, body: BlockStatement) -> None:
-        self.type = "WhileStatement"
         self.condition = condition
         self.body = body
 
@@ -104,7 +101,6 @@ class WhileStatement(Statement):
 """
 class RangeStatement(Statement):
     def __init__(self, identifier: str, start: Expression, end: Expression, increment: Expression, body: BlockStatement) -> None:
-        self.type = "RangeStatement"
         self.identifier = identifier
         self.start = start
         self.end = end
@@ -113,7 +109,7 @@ class RangeStatement(Statement):
 
     def __repr__(self) -> str:
         return f'RangeStatement({self.identifier}, {self.start}, {self.end}, {self.increment}, {self.body})'
-        
+
 
 """
 7.  Each Statement
@@ -125,7 +121,6 @@ class RangeStatement(Statement):
 """
 class EachStatement(Statement):
     def __init__(self, variable: str, iterable: Expression, body: BlockStatement) -> None:
-        self.type = "EachStatement"
         self.variable = variable
         self.iterable = iterable
         self.body = body
@@ -141,7 +136,6 @@ class EachStatement(Statement):
 """
 class ReturnStatement(Statement):
     def __init__(self, expression: Optional[Expression]) -> None:
-        self.type = "ReturnStatement"
         self.expression = expression
 
     def __repr__(self) -> str:
@@ -150,30 +144,29 @@ class ReturnStatement(Statement):
 """
 9.  Function Declaration
     Syntax: func <name> = [<parameters>] >> <body>
-    
+
     func add = [x, y] >> {
         return x + y;
     }
 """
 class FunctionDeclaration(Statement):
-    def __init__(self, name: str, parameters: List[str], body: BlockStatement) -> None:
-        self.type = "FunctionDeclaration"
+    def __init__(self, name: str, return_type: VarType, parameters: List[Tuple[str, VarType]], body: BlockStatement) -> None:
         self.name = name
+        self.return_type = return_type
         self.parameters = parameters
         self.body = body
 
     def __repr__(self) -> str:
-        return f'FunctionDeclaration({self.name}, {self.parameters}, {self.body})'
-    
+        return f'FunctionDeclaration({self.name}, {self.return_type} {self.parameters}, {self.body})'
+
 """
 10. Echo Statement
     Syntax: echo <expression>;
-    
+
     echo "Hello, World!";
 """
 class EchoStatement(Statement):
     def __init__(self, expression: Expression) -> None:
-        self.type = "EchoStatement"
         self.expression = expression
 
     def __repr__(self) -> str:
@@ -185,25 +178,25 @@ class NumericLiteral(Expression):
         self.value = value
     def __repr__(self) -> str:
         return f'NumericLiteral({self.value})'
-    
+
 class StringLiteral(Expression):
     def __init__(self, value: str) -> None:
         self.value = value
     def __repr__(self) -> str:
         return f'StringLiteral({self.value})'
-    
+
 class BooleanLiteral(Expression):
     def __init__(self, value: bool) -> None:
         self.value = value
     def __repr__(self) -> str:
         return f'BooleanLiteral({self.value})'
-    
+
 class NullLiteral(Expression):
     def __init__(self) -> None:
         self.value = None
     def __repr__(self) -> str:
         return f'NullLiteral()'
-    
+
 class ArrayLiteral(Expression):
     def __init__(self, elements: List[Expression]) -> None:
         self.elements = elements
@@ -215,7 +208,7 @@ class Identifier(Expression):
         self.name = name
     def __repr__(self) -> str:
         return f'Identifier({self.name})'
-    
+
 class UnaryExpression(Expression):
     def __init__(self, operator: TokenType, operand: Expression, position: Literal['PRE', 'POST']) -> None:
         self.operator = operator
@@ -231,7 +224,7 @@ class BinaryExpression(Expression):
         self.right = right
     def __repr__(self) -> str:
         return f'BinaryExpression({self.left}, {self.operator}, {self.right})'
-    
+
 class AssignmentExpression(Expression):
     def __init__(self, left: Node, right: Node) -> None:
         self.left = left
@@ -245,10 +238,18 @@ class IndexExpression(Expression):
         self.index = index
     def __repr__(self) -> str:
         return f'IndexExpression({self.array}, {self.index})'
-    
+
 class CallExpression(Expression):
-    def __init__(self, callee: Node, arguments: List[Expression]) -> None:
+    def __init__(self, callee: Node, args: List[Expression]) -> None:
         self.callee = callee
-        self.arguments = arguments
+        self.args = args
     def __repr__(self) -> str:
-        return f'FunctionCall({self.callee}, {self.arguments})'
+        return f'FunctionCall({self.callee}, {self.args})'
+
+class PipeExpression(Expression):
+    def __init__(self, args: List[Expression], functions: List[Expression]) -> None:
+        self.args = args
+        self.functions = functions
+
+    def __repr__(self) -> str:
+        return f'PipeExpression({self.args}, {self.functions})'
