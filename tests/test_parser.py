@@ -203,19 +203,31 @@ def test_range_statement():
 
 def test_function_declaration():
     code = """
-        func add = [a, b] >> {
+        func add -> int = [int a, int b] >> {
             return a + b;
         }
     """
     expected = Program([
-        FunctionDeclaration("add", ["a", "b"], BlockStatement([ReturnStatement(BinaryExpression(Identifier("a"), TokenType.PLUS, Identifier("b")))]))
+        FunctionDeclaration(
+            "add",
+            PrimitiveType(TokenType.INT),
+            [
+                ('a', PrimitiveType(TokenType.INT)),
+                ('b', PrimitiveType(TokenType.INT))
+            ],
+            BlockStatement(
+                [
+                    ReturnStatement(BinaryExpression(Identifier("a"), TokenType.PLUS, Identifier("b")))
+                ]
+            )
+        )
     ])
     check(code, expected)
 
 def test_combined_function_example():
     code = """
         int z = 15;
-        func multiply = [x, y] >> {
+        func multiply -> int = [int x, int y] >> {
             return x * y;
         }
         if (z > 10) {
@@ -227,7 +239,15 @@ def test_combined_function_example():
     """
     expected = Program([
         VariableDeclaration("z", PrimitiveType(TokenType.INT), NumericLiteral(15)),
-        FunctionDeclaration("multiply", ["x", "y"], BlockStatement([ReturnStatement(BinaryExpression(Identifier("x"), TokenType.MULTIPLY, Identifier("y")))])),
+        FunctionDeclaration(
+            'multiply',
+            PrimitiveType(TokenType.INT),
+            [
+                ('x', PrimitiveType(TokenType.INT)),
+                ('y', PrimitiveType(TokenType.INT))
+            ],
+            BlockStatement([ReturnStatement(BinaryExpression(Identifier("x"), TokenType.MULTIPLY, Identifier("y")))])
+        ),
         IfStatement(
             BinaryExpression(Identifier("z"), TokenType.GT, NumericLiteral(10)),
             BlockStatement([ExpressionStatement(AssignmentExpression(Identifier("z"),  CallExpression(Identifier("multiply"), [Identifier("z"), NumericLiteral(2)])))]),

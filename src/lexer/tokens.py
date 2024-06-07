@@ -18,7 +18,7 @@ class TokenType(Enum):
     FLOAT = auto()              # "float"
     BOOL = auto()               # "bool"
     STRING = auto()             # "string"
-    AUTO = auto()               # "auto"
+    INFER = auto()              # "infer"
 
     # Identifiers
     IDENTIFIER = auto()
@@ -111,6 +111,7 @@ spec = (
     (TokenType.FLOAT, r'\bfloat\b'),
     (TokenType.BOOL, r'\bbool\b'),
     (TokenType.STRING, r'\bstring\b'),
+    (TokenType.INFER, r'\binfer\b'),
 
     (TokenType.LPAREN, r'\('),
     (TokenType.RPAREN, r'\)'),

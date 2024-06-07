@@ -10,7 +10,7 @@ class PrimitiveType(VarType):
         return f'{self.primitive}'
 
 class ArrayType(VarType):
-    def __init__(self, primitive: PrimitiveType):
-        self.primitive = primitive
+    def __init__(self, element_type: VarType):
+        self.element_type = element_type
     def __repr__ (self):
-        return f'Array<{self.primitive}>'
+        return f'Array({self.element_type})'
