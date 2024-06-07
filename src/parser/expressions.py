@@ -4,8 +4,7 @@ from parser.helpers import get_precedence
 from parser.types import ParserABC, ExpressionParserABC
 from syntax.ast import (
     BooleanLiteral, Expression, AssignmentExpression, Identifier, BinaryExpression, StringLiteral,
-    UnaryExpression, NumericLiteral, CallExpression, ArrayLiteral, IndexExpression,
-    PipeExpression
+    UnaryExpression, NumericLiteral, CallExpression, ArrayLiteral, IndexExpression, PipeExpression
 )
 
 class ExpressionParser(ExpressionParserABC):

@@ -150,13 +150,14 @@ class ReturnStatement(Statement):
     }
 """
 class FunctionDeclaration(Statement):
-    def __init__(self, name: str, parameters: List[str], body: BlockStatement) -> None:
+    def __init__(self, name: str, return_type: VarType, parameters: List[Tuple[str, VarType]], body: BlockStatement) -> None:
         self.name = name
+        self.return_type = return_type
         self.parameters = parameters
         self.body = body
 
     def __repr__(self) -> str:
-        return f'FunctionDeclaration({self.name}, {self.parameters}, {self.body})'
+        return f'FunctionDeclaration({self.name}, {self.return_type} {self.parameters}, {self.body})'
 
 """
 10. Echo Statement
@@ -244,7 +245,6 @@ class CallExpression(Expression):
         self.args = args
     def __repr__(self) -> str:
         return f'FunctionCall({self.callee}, {self.args})'
-
 
 class PipeExpression(Expression):
     def __init__(self, args: List[Expression], functions: List[Expression]) -> None:

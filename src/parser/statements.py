@@ -2,7 +2,7 @@ from typing import *
 from lexer.tokens import TokenType
 from parser.types import ParserABC, StatementParserABC
 from parser.expressions import ExpressionParser
-from semantic.types import ArrayType, PrimitiveType
+from semantic.types import ArrayType, PrimitiveType, VarType
 from syntax.ast import (
     EchoStatement, Statement, ExpressionStatement, VariableDeclaration, BlockStatement, IfStatement,
     WhileStatement, RangeStatement, EachStatement, ReturnStatement, FunctionDeclaration,
@@ -92,14 +92,7 @@ class StatementParser(StatementParserABC):
             VariableDeclaration: The parsed variable declaration.
         """
 
-        var_type = PrimitiveType(self.parser.current().type)
-        self.parser.consume(var_type.primitive)
-
-        if self.parser.current().type == TokenType.LBRACKET:
-            self.parser.consume(TokenType.LBRACKET)
-            self.parser.consume(TokenType.RBRACKET)
-            var_type = ArrayType(var_type)
-
+        var_type = self._parse_var_type()
         name = self.parser.consume(TokenType.IDENTIFIER)
         self.parser.consume(TokenType.ASSIGN)
         initializer = self.expression_parser.parse_expression()
@@ -217,21 +210,28 @@ class StatementParser(StatementParserABC):
         """
         self.parser.consume(TokenType.FUNC)
         name = self.parser.consume(TokenType.IDENTIFIER)
+        self.parser.consume(TokenType.RETURN_ARROW)
+        return_type = self._parse_var_type()
         self.parser.consume(TokenType.ASSIGN)
         self.parser.consume(TokenType.LBRACKET)
 
-        parameters: List[str] = []
+        parameters: List[Tuple[str, VarType]] = []
         if self.parser.current().type != TokenType.RBRACKET:
-            parameters.append(self.parser.consume(TokenType.IDENTIFIER).value)
+            var_type = self._parse_var_type()
+            identifier = self.parser.consume(TokenType.IDENTIFIER).value
+            parameters.append((identifier, var_type))
+
             while self.parser.current().type == TokenType.COMMA:
                 self.parser.consume(TokenType.COMMA)
-                parameters.append(self.parser.consume(TokenType.IDENTIFIER).value)
+                var_type = self._parse_var_type()
+                identifier = self.parser.consume(TokenType.IDENTIFIER).value
+                parameters.append((identifier, var_type))
 
         self.parser.consume(TokenType.RBRACKET)
         self.parser.consume(TokenType.ARROW)
         body = self.parse_block_statement()
 
-        return FunctionDeclaration(name.value, parameters, body)
+        return FunctionDeclaration(name.value, return_type, parameters, body)
 
     def parse_echo_statement(self) -> EchoStatement:
         """
@@ -245,3 +245,31 @@ class StatementParser(StatementParserABC):
         self.parser.consume(TokenType.SEMICOLON)
 
         return EchoStatement(expr)
+
+    def _parse_var_type(self) -> VarType:
+        """
+        Parses a variable type.
+
+        Returns:
+            Type: The parsed variable type.
+        """
+
+        match self.parser.current().type:
+            case TokenType.INT:
+                var_type = PrimitiveType(self.parser.consume(TokenType.INT).type)
+            case TokenType.FLOAT:
+                var_type = PrimitiveType(self.parser.consume(TokenType.FLOAT).type)
+            case TokenType.STRING:
+                var_type = PrimitiveType(self.parser.consume(TokenType.STRING).type)
+            case TokenType.BOOL:
+                var_type = PrimitiveType(self.parser.consume(TokenType.BOOL).type)
+            case _:
+                raise SyntaxError(f'Unexpected token {self.parser.current()}')
+
+        while self.parser.current().type == TokenType.LBRACKET:
+            self.parser.consume(TokenType.LBRACKET)
+            self.parser.consume(TokenType.RBRACKET)
+
+            var_type = ArrayType(var_type)
+
+        return var_type
