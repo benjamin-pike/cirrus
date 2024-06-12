@@ -15,8 +15,7 @@ class Parser(ParserABC):
         statement_parser (StatementParser): An instance of StatementParser to handle statement parsing.
     """
     def __init__(self, tokens: List[Token]) -> None:
-        """
-        Initialises the Parser with a list of tokens and sets up the statement parser.
+        """ Initialises the Parser with a list of tokens and sets up the statement parser.
 
         Args:
             tokens (List[Token]): The list of tokens to be parsed.
@@ -26,8 +25,7 @@ class Parser(ParserABC):
         self.statement_parser = StatementParser(self)  # Initialise the statement parser with the current parser instance
 
     def parse(self) -> Program:
-        """
-        Parses the tokens into a Program AST node.
+        """ Parses the tokens into a Program AST node.
 
         Returns:
             Program: The root node of the parsed AST.
@@ -37,8 +35,7 @@ class Parser(ParserABC):
         return Program(body)
 
     def consume(self, token_type: TokenType) -> Token:
-        """
-        Consumes the current token if it matches the expected type, otherwise raises an error.
+        """ Consumes the current token if it matches the expected type, otherwise raises an error.
 
         Args:
             token_type (TokenType): The expected type of the current token.
@@ -57,8 +54,7 @@ class Parser(ParserABC):
         return token
 
     def current(self) -> Token:
-        """
-        Retrieves the token at the current position.
+        """ Retrieves the token at the current position.
 
         Returns:
             Token: The current token.
@@ -72,8 +68,7 @@ class Parser(ParserABC):
         return self.tokens[self.pos]
 
     def is_eof(self) -> bool:
-        """
-        Checks if the current token is the end-of-file token.
+        """ Checks if the current token is the end-of-file token.
 
         Returns:
             bool: True if the current token is EOF, otherwise False.

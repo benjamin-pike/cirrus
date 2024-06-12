@@ -210,11 +210,13 @@ def test_function_declaration():
     expected = Program([
         FunctionDeclaration(
             "add",
-            PrimitiveType(TokenType.INT),
-            [
-                ('a', PrimitiveType(TokenType.INT)),
-                ('b', PrimitiveType(TokenType.INT))
-            ],
+            FunctionType(
+                PrimitiveType(TokenType.INT),
+                [
+                    ('a', PrimitiveType(TokenType.INT)),
+                    ('b', PrimitiveType(TokenType.INT))
+                ]
+            ),
             BlockStatement(
                 [
                     ReturnStatement(BinaryExpression(Identifier("a"), TokenType.PLUS, Identifier("b")))
@@ -241,11 +243,13 @@ def test_combined_function_example():
         VariableDeclaration("z", PrimitiveType(TokenType.INT), NumericLiteral(15)),
         FunctionDeclaration(
             'multiply',
-            PrimitiveType(TokenType.INT),
-            [
-                ('x', PrimitiveType(TokenType.INT)),
-                ('y', PrimitiveType(TokenType.INT))
-            ],
+            FunctionType(
+                PrimitiveType(TokenType.INT),
+                [
+                    ('x', PrimitiveType(TokenType.INT)),
+                    ('y', PrimitiveType(TokenType.INT))
+                ],
+            ),
             BlockStatement([ReturnStatement(BinaryExpression(Identifier("x"), TokenType.MULTIPLY, Identifier("y")))])
         ),
         IfStatement(
@@ -260,15 +264,87 @@ def test_combined_function_example():
     ])
     check(code, expected)
 
+def test_arg_function_type():
+    code = """
+        func add -> int = [int a, int b] >> {
+            return a + b;
+        }
+
+        func reduce -> int = [int[] arr, func<int, [int a, int b]> fn] >> {
+            int result = 0;
+            each x in arr {
+                result = fn(result, x);
+            }
+            return result;
+        }
+    """
+
+    excepted = Program([
+        FunctionDeclaration(
+            "add",
+            FunctionType(
+                PrimitiveType(TokenType.INT),
+                [
+                    ('a', PrimitiveType(TokenType.INT)),
+                    ('b', PrimitiveType(TokenType.INT))
+                ]
+            ),
+            BlockStatement(
+                [
+                    ReturnStatement(BinaryExpression(Identifier("a"), TokenType.PLUS, Identifier("b")))
+                ]
+            )
+        ),
+
+        FunctionDeclaration(
+            "reduce",
+            FunctionType(
+                PrimitiveType(TokenType.INT),
+                [
+                    ('arr', ArrayType(PrimitiveType(TokenType.INT))),
+                    ('fn', FunctionType(PrimitiveType(TokenType.INT), [('a', PrimitiveType(TokenType.INT)), ('b', PrimitiveType(TokenType.INT))]))
+                ]
+            ),
+            BlockStatement(
+                [
+                    VariableDeclaration("result", PrimitiveType(TokenType.INT), NumericLiteral(0)),
+                    EachStatement(
+                        "x",
+                        Identifier("arr"),
+                        BlockStatement(
+                            [
+                                ExpressionStatement(
+                                    AssignmentExpression(
+                                        Identifier("result"),
+                                        CallExpression(
+                                            Identifier("fn"),
+                                            [Identifier("result"), Identifier("x")]
+                                        )
+                                    )
+                                )
+                            ]
+                        )
+                    ),
+                    ReturnStatement(Identifier("result"))
+                ]
+            )
+        )
+    ])
+
+    check(code, excepted)
+
 def test_pipe_expression_single():
     code = """
         [[1, 2, 3]] >> map(triple);
     """
     expected = Program([
         ExpressionStatement(
-            PipeExpression(
-                [ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)])],
-                [CallExpression(Identifier("map"), [Identifier("triple")])]
+            CallExpression(
+                Identifier("map"),
+                [
+                    ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
+                    Identifier("triple")
+                ]
             )
         )
     ])
@@ -280,12 +356,23 @@ def test_pipe_expression_multiple():
     """
     expected = Program([
         ExpressionStatement(
-            PipeExpression(
-                [ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)])],
+            CallExpression(
+                Identifier("reduce"),
                 [
-                    CallExpression(Identifier("map"), [Identifier("triple")]),
-                    CallExpression(Identifier("filter"), [Identifier("isEven")]),
-                    CallExpression(Identifier("reduce"), [Identifier("add")])
+                    CallExpression(
+                        Identifier("filter"),
+                        [
+                            CallExpression(
+                                Identifier("map"),
+                                [
+                                    ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
+                                    Identifier("triple")
+                                ]
+                            ),
+                            Identifier("isEven")
+                        ]
+                    ),
+                    Identifier("add")
                 ]
             )
         )
@@ -300,17 +387,27 @@ def test_complex_pipe_expression():
             >> sum;
     """
     expected = Program([
-        VariableDeclaration("x", ArrayType(PrimitiveType(TokenType.INT)), PipeExpression(
-            [
-                ArrayLiteral([NumericLiteral(1), NumericLiteral(2)]),
-                ArrayLiteral([NumericLiteral(3), NumericLiteral(4)])
-            ],
-            [
-                CallExpression(Identifier("reduce"), [Identifier("add")]),
-                CallExpression(Identifier("map"), [Identifier("triple")]),
-                Identifier("sum")
-            ]
-        ))
+        VariableDeclaration("x", ArrayType(PrimitiveType(TokenType.INT)),
+            CallExpression(
+                Identifier("sum"),
+                [
+                    CallExpression(
+                        Identifier("map"),
+                        [
+                            CallExpression(
+                                Identifier("reduce"),
+                                [
+                                    ArrayLiteral([NumericLiteral(1), NumericLiteral(2)]),
+                                    ArrayLiteral([NumericLiteral(3), NumericLiteral(4)]),
+                                    Identifier("add")
+                                ]
+                            ),
+                            Identifier("triple")
+                        ]
+                    )
+                ]
+            )
+        )
     ])
     check(code, expected)
 
