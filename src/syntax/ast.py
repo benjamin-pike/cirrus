@@ -1,6 +1,6 @@
 from typing import *
 from lexer.tokens import TokenType
-from semantic.types import VarType
+from semantic.types import FunctionType, VarType
 
 class Node(): ...
 class Statement(Node): ...
@@ -150,14 +150,13 @@ class ReturnStatement(Statement):
     }
 """
 class FunctionDeclaration(Statement):
-    def __init__(self, name: str, return_type: VarType, parameters: List[Tuple[str, VarType]], body: BlockStatement) -> None:
+    def __init__(self, name: str, function_type: FunctionType, body: BlockStatement) -> None:
         self.name = name
-        self.return_type = return_type
-        self.parameters = parameters
+        self.function_type = function_type
         self.body = body
 
     def __repr__(self) -> str:
-        return f'FunctionDeclaration({self.name}, {self.return_type} {self.parameters}, {self.body})'
+        return f'FunctionDeclaration({self.name}, {self.function_type}, {self.body})'
 
 """
 10. Echo Statement
@@ -240,16 +239,8 @@ class IndexExpression(Expression):
         return f'IndexExpression({self.array}, {self.index})'
 
 class CallExpression(Expression):
-    def __init__(self, callee: Node, args: List[Expression]) -> None:
+    def __init__(self, callee: Identifier, args: List[Expression]) -> None:
         self.callee = callee
         self.args = args
     def __repr__(self) -> str:
         return f'FunctionCall({self.callee}, {self.args})'
-
-class PipeExpression(Expression):
-    def __init__(self, args: List[Expression], functions: List[Expression]) -> None:
-        self.args = args
-        self.functions = functions
-
-    def __repr__(self) -> str:
-        return f'PipeExpression({self.args}, {self.functions})'

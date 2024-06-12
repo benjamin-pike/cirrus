@@ -55,12 +55,14 @@ python setup.py
 ## Language Syntax
 ### Variable Declarations
 ```
-let x = 10;
+int x = 10;
+string y = 'Hello, World!';
+bool z = true;
 ```
 
 ### Function Definitions
 ```
-func add = [a, b] >> {
+func add -> int = [int a, int b] >> {
     return a + b;
 }
 ```
@@ -77,9 +79,9 @@ let result = numbers
 ### Conditional Statements
 ```
 if x > 10 {
-    return "Greater than 10";
+    echo 'Greater than 10';
 } else {
-    return "Less than or equal to 10";
+    echo 'Less than or equal to 10';
 }
 ```
 
