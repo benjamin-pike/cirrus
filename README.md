@@ -69,11 +69,8 @@ func add -> int = [int a, int b] >> {
 
 ### Array Methods and Chaining
 ```
-let numbers = [1, 2, 3, 4, 5];
-let result = numbers
-    | map(x >> x * 2)
-    | filter(x >> x > 5)
-    | reduce((acc, x) >> acc + x, 0);
+int[] numbers = [1, 2, 3, 4, 5];
+int result = numbers >> map(double) >> reduce(add)
 ```
 
 ### Conditional Statements
@@ -126,8 +123,9 @@ The project is organised into several directories, each responsible for a differ
 ### Details
 - **src/**: Contains the source code.
   - **lexer/**: Lexer implementation.
-  - **parser/**: Parser implementation.
+  - **parser/**: Parser components.
   - **ast/**: AST nodes.
+  - **semantic/**: Semantic analyzer components.
 - **tests/**: Unit tests for each component.
 - **examples/**: Example programs written in the language.
 - **scripts/**: Helper scripts for building, testing, and running the project.
