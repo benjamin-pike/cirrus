@@ -1,5 +1,5 @@
 from typing import *
-from semantic.types import VarType
+from semantic.types import FunctionType, VarType
 
 class Symbol:
     """
@@ -27,13 +27,26 @@ class SymbolTable:
         """ Initializes the symbol table with an empty global scope. """
         self.scopes: List[Dict[str, Symbol]] = [{}]
 
+        self.function_types: List[FunctionType] = []
+        self.function_scopes: List[Dict[str, Symbol]] = [{}]
+
     def enter_scope(self) -> None:
         """ Enters a new scope by pushing a new dictionary onto the scope stack. """
         self.scopes.append({})
 
+    def enter_function_scope(self, fn_type: FunctionType) -> None:
+        self.enter_scope()
+
+        self.function_scopes.append(self.scopes[-1])
+        self.function_types.append(fn_type)
+
     def exit_scope(self) -> None:
         """ Exits the current scope by popping the dictionary off the scope stack. """
         self.scopes.pop()
+
+    def exit_function_scope(self) -> None:
+        self.exit_scope() # Also pops the function scope as the memory address is shared
+        self.function_types.pop()
 
     def define(self, name: str, var_type: VarType) -> None:
         """ Adds a symbol to the current scope.
@@ -62,3 +75,15 @@ class SymbolTable:
             if name in scope:
                 return scope[name]
         return None
+
+    def get_current_function_scope(self) -> Optional[Dict[str, Symbol]]:
+        if not self.function_scopes:
+            return None
+
+        return self.function_scopes[-1]
+
+    def get_current_function_type(self) -> Optional[FunctionType]:
+        if not self.function_types:
+            return None
+
+        return self.function_types[-1]

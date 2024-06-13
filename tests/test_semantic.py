@@ -111,6 +111,30 @@ def test_function_declaration_and_call():
     """
     analyze_code(code)
 
+def test_function_variable_assignment_scope_error():
+    code = """
+        int x = 10;
+
+        func add -> void = [int a, int b] >> {
+            x = a + b;
+        }
+    """
+
+    with pytest.raises(NameError, match=r'Variable "x" not declared in the function scope'):
+        analyze_code(code)
+
+def test_function_index_assignment_scope_error():
+    code = """
+        int[] arr = [1, 2, 3];
+
+        func add -> void = [int[] a] >> {
+            arr[0] = a;
+        }
+    """
+
+    with pytest.raises(NameError, match=r'Variable "arr" not declared in the function scope'):
+        analyze_code(code)
+
 def test_nested_blocks_and_scopes():
     code = """
         int x = 5;

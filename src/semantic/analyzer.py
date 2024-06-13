@@ -94,11 +94,11 @@ class SemanticAnalyzer:
         """
         self.symbol_table.define(node.name, node.function_type)
 
-        self.symbol_table.enter_scope()
+        self.symbol_table.enter_function_scope(node.function_type)
         for param_name, param_type in node.function_type.param_types:
             self.symbol_table.define(param_name, param_type)
         self.analyze(node.body)
-        self.symbol_table.exit_scope()
+        self.symbol_table.exit_function_scope()
 
         return node.function_type.return_type
 
@@ -213,25 +213,17 @@ class SemanticAnalyzer:
         return VoidType()
 
     def analyze_return_statement(self, node: ReturnStatement) -> VarType:
-        # Find the nearest function scope
-        function_return_type = None
-        for scope in reversed(self.symbol_table.scopes):
-            for symbol in scope.values():
-                if isinstance(symbol.var_type, FunctionType):
-                    function_return_type = symbol.var_type.return_type
-                    break
-            if function_return_type:
-                break
-
-        if function_return_type is None:
+        fn_type = self.symbol_table.get_current_function_type()
+        if not fn_type:
             raise SyntaxError("Return statement is not valid outside of a function block")
 
         return_type = VoidType()
         if node.expression:
             return_type = self.analyze(node.expression)
 
-        if return_type != function_return_type:
-            raise TypeError(f"Return type {return_type} does not match function return type {function_return_type}")
+        fn_return_type = fn_type.return_type
+        if return_type != fn_return_type:
+            raise TypeError(f"Return type {return_type} does not match function return type {fn_return_type}")
 
         return return_type
 
@@ -302,6 +294,20 @@ class SemanticAnalyzer:
         Returns:
             VarType: The type of the assignment expression.
         """
+        if isinstance(node.left, Identifier):
+            var_name = node.left.name
+        elif isinstance(node.left, IndexExpression):
+            var_name = node.left.array.name
+        else:
+            raise TypeError('Invalid assignment target')
+
+        for scope in reversed(self.symbol_table.scopes):
+            # Check if the variable is declared within the function scope
+            if var_name in [symbol.name for symbol in scope.values()]:
+                break
+            if scope == self.symbol_table.get_current_function_scope():
+                raise NameError(f'Variable "{var_name}" not declared in the function scope')
+
         left_type = self.analyze(node.left)
         right_type = self.analyze(node.right)
 
