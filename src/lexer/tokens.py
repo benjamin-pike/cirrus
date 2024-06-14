@@ -145,10 +145,10 @@ spec = (
 
     (TokenType.EQUAL, r'=='),
     (TokenType.NOT_EQUAL, r'!='),
-    (TokenType.LT, r'<'),
-    (TokenType.GT, r'>'),
     (TokenType.LTE, r'<='),
     (TokenType.GTE, r'>='),
+    (TokenType.LT, r'<'),
+    (TokenType.GT, r'>'),
 
     (TokenType.PLUS, r'\+'),
     (TokenType.MINUS, r'-'),

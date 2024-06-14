@@ -16,40 +16,53 @@ class Symbol:
     def __repr__(self) -> str:
         return f'Symbol(name={self.name}, var_type={self.var_type})'
 
+class Scope:
+    """
+    Represents a scope in the symbol table.
+
+    Attributes:
+        symbols (Dict[str, Symbol]): A dictionary mapping names to symbols.
+        function_type (Optional[FunctionType]): The function type if this scope is a function scope, otherwise None.
+    """
+    def __init__(self, function_type: Optional[FunctionType] = None) -> None:
+        self.symbols: Dict[str, Symbol] = {}
+        self.function_type = function_type
+
+    def __repr__(self) -> str:
+        return f'Scope(function_type={self.function_type}, symbols={list(self.symbols.keys())})'
+
 class SymbolTable:
     """
     Represents a symbol table for managing variables and functions.
 
     Attributes:
-        scopes (List[Dict[str, Symbol]]): A stack of scopes, each a dictionary mapping names to symbols.
+        scopes (List[Scope]): A stack of scopes.
     """
     def __init__(self) -> None:
-        """ Initializes the symbol table with an empty global scope. """
-        self.scopes: List[Dict[str, Symbol]] = [{}]
+        """Initializes the symbol table with an empty global scope."""
+        self.scopes: List[Scope] = [Scope()]
 
-        self.function_types: List[FunctionType] = []
-        self.function_scopes: List[Dict[str, Symbol]] = [{}]
+    def enter_scope(self, function_type: Optional[FunctionType] = None) -> None:
+        """Enters a new scope, optionally as a function scope.
 
-    def enter_scope(self) -> None:
-        """ Enters a new scope by pushing a new dictionary onto the scope stack. """
-        self.scopes.append({})
-
-    def enter_function_scope(self, fn_type: FunctionType) -> None:
-        self.enter_scope()
-
-        self.function_scopes.append(self.scopes[-1])
-        self.function_types.append(fn_type)
+        Args:
+            function_type (Optional[FunctionType]): If provided, the new scope is a function scope with the given function type.
+        """
+        self.scopes.append(Scope(function_type))
 
     def exit_scope(self) -> None:
-        """ Exits the current scope by popping the dictionary off the scope stack. """
-        self.scopes.pop()
+        """Exits the current scope by popping it off the scope stack.
 
-    def exit_function_scope(self) -> None:
-        self.exit_scope() # Also pops the function scope as the memory address is shared
-        self.function_types.pop()
+        Raises:
+            IndexError: If attempting to exit the global scope.
+        """
+        if len(self.scopes) > 1:
+            self.scopes.pop()
+        else:
+            raise IndexError('Cannot exit the global scope')
 
     def define(self, name: str, var_type: VarType) -> None:
-        """ Adds a symbol to the current scope.
+        """Adds a symbol to the current scope.
 
         Args:
             name (str): The name of the symbol.
@@ -58,32 +71,52 @@ class SymbolTable:
         Raises:
             KeyError: If the symbol is already declared in the current scope.
         """
-        if name in self.scopes[-1]:
+        current_scope = self.scopes[-1]
+        if name in current_scope.symbols:
             raise KeyError(f'Symbol {name} already declared in the current scope')
-        self.scopes[-1][name] = Symbol(name, var_type)
+        current_scope.symbols[name] = Symbol(name, var_type)
 
-    def lookup(self, name: str) -> Optional[Symbol]:
-        """ Looks up a symbol by name, starting from the innermost scope.
+    def lookup(self, name: str, limit_to_function: bool = False) -> Optional[Symbol]:
+        """Looks up a symbol by name, starting from the innermost scope.
 
         Args:
             name (str): The name of the symbol to lookup.
+            limit_to_function (bool): If True, only search up to the nearest function scope.
 
         Returns:
             Optional[Symbol]: The symbol if found, otherwise None.
         """
         for scope in reversed(self.scopes):
-            if name in scope:
-                return scope[name]
-        return None
+            if name in scope.symbols:
+                return scope.symbols[name]
+            if limit_to_function and scope.function_type is not None:
+                break
 
-    def get_current_function_scope(self) -> Optional[Dict[str, Symbol]]:
-        if not self.function_scopes:
-            return None
+        return
 
-        return self.function_scopes[-1]
+    def get_scope(self, symbol: Symbol) -> Optional[Scope]:
+        """Gets the scope containing the given symbol.
 
-    def get_current_function_type(self) -> Optional[FunctionType]:
-        if not self.function_types:
-            return None
+        Args:
+            symbol (Symbol): The symbol to look up.
 
-        return self.function_types[-1]
+        Returns:
+            Optional[Scope]: The scope containing the symbol if found, otherwise None.
+        """
+        for scope in reversed(self.scopes):
+            if symbol in scope.symbols.values():
+                return scope
+
+        return
+
+    def get_current_function_scope(self) -> Optional[Scope]:
+        """Gets the function type of the current function scope, if any.
+
+        Returns:
+            Optional[FunctionType]: The function type if in a function, otherwise None.
+        """
+        for scope in reversed(self.scopes):
+            if scope.function_type is not None:
+                return scope
+
+        return
