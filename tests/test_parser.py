@@ -109,6 +109,52 @@ def test_while_statement():
     ])
     check(code, expected)
 
+def test_unary_expressions():
+    code = """
+        x++;
+        --y;
+        !z;
+    """
+    expected = Program([
+        ExpressionStatement(UnaryExpression(TokenType.INCREMENT, Identifier("x"), 'POST')),
+        ExpressionStatement(UnaryExpression(TokenType.DECREMENT, Identifier("y"), 'PRE')),
+        ExpressionStatement(UnaryExpression(TokenType.LOGICAL_NOT, Identifier("z"), 'PRE'))
+    ])
+    check(code, expected)
+
+def test_complex_unary_expressions():
+    code = """
+        int x = a[1]++;
+        int y = --b();
+        bool z = !c();
+    """
+
+    excepted = Program([
+        VariableDeclaration(
+            "x",
+            PrimitiveType(TokenType.INT),
+            UnaryExpression(TokenType.INCREMENT, IndexExpression(Identifier("a"), NumericLiteral(1)),'POST')
+        ),
+        VariableDeclaration(
+            "y",
+            PrimitiveType(TokenType.INT),
+            UnaryExpression(TokenType.DECREMENT, CallExpression(Identifier("b"), []),'PRE')
+        ),
+        VariableDeclaration(
+            "z",
+            PrimitiveType(TokenType.BOOL),
+            UnaryExpression(TokenType.LOGICAL_NOT, CallExpression(Identifier("c"), []),'PRE')
+        )
+    ])
+    check(code, excepted)
+
+def test_logical_unary_expression():
+    code = """ !x; """
+    expected = Program([
+        ExpressionStatement(UnaryExpression(TokenType.LOGICAL_NOT, Identifier("x"), 'PRE'))
+    ])
+    check(code, expected)
+
 def test_array_literal():
     code = "int[] arr = [1, 2, 3];"
     expected = Program([

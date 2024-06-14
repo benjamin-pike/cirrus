@@ -232,7 +232,7 @@ class AssignmentExpression(Expression):
         return f'AssignmentExpression({self.left}, {self.right})'
 
 class IndexExpression(Expression):
-    def __init__(self, array: Identifier, index: Expression) -> None:
+    def __init__(self, array: Expression, index: Expression) -> None:
         self.array = array
         self.index = index
     def __repr__(self) -> str:

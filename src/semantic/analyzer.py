@@ -74,6 +74,15 @@ class SemanticAnalyzer:
         """
         init_type = self.analyze(node.initializer)
 
+        existing_symbol = self.symbol_table.lookup(node.name, True)
+
+        if existing_symbol:
+            existing_scope = self.symbol_table.get_scope(existing_symbol)
+            if existing_scope == self.symbol_table.scopes[-1]:
+                raise NameError(f'Cannot redeclare variable "{node.name}"')
+            else:
+                raise NameError(f'Cannot shadow existing variable "{node.name}"')
+
         if isinstance(node.var_type, InferType):
             node.var_type = init_type # Infer the variable type from the initializer
         if node.var_type != init_type:
@@ -92,13 +101,16 @@ class SemanticAnalyzer:
         Returns:
             VarType: The return type of the function.
         """
+        if self.symbol_table.lookup(node.name, True):
+            raise NameError(f'Cannot redeclare function "{node.name}"')
+
         self.symbol_table.define(node.name, node.function_type)
 
-        self.symbol_table.enter_function_scope(node.function_type)
+        self.symbol_table.enter_scope(node.function_type)
         for param_name, param_type in node.function_type.param_types:
             self.symbol_table.define(param_name, param_type)
         self.analyze(node.body)
-        self.symbol_table.exit_function_scope()
+        self.symbol_table.exit_scope()
 
         return node.function_type.return_type
 
@@ -213,15 +225,15 @@ class SemanticAnalyzer:
         return VoidType()
 
     def analyze_return_statement(self, node: ReturnStatement) -> VarType:
-        fn_type = self.symbol_table.get_current_function_type()
-        if not fn_type:
+        fn_scope = self.symbol_table.get_current_function_scope()
+        if not fn_scope or not fn_scope.function_type:
             raise SyntaxError("Return statement is not valid outside of a function block")
 
         return_type = VoidType()
         if node.expression:
             return_type = self.analyze(node.expression)
 
-        fn_return_type = fn_type.return_type
+        fn_return_type = fn_scope.function_type.return_type
         if return_type != fn_return_type:
             raise TypeError(f"Return type {return_type} does not match function return type {fn_return_type}")
 
@@ -246,7 +258,7 @@ class SemanticAnalyzer:
         match node.operator:
             # Arithmetic operators
             case TokenType.PLUS | TokenType.MINUS | TokenType.MULTIPLY | TokenType.DIVIDE:
-                if left_type not in {PrimitiveType(TokenType.INT), PrimitiveType(TokenType.FLOAT)}:
+                if left_type not in {PrimitiveType(TokenType.INT), PrimitiveType(TokenType.FLOAT), PrimitiveType(TokenType.STRING)}:
                     raise TypeError(f'Invalid operand types for {node.operator}: {left_type}')
                 return left_type
             # Comparison operators
@@ -278,6 +290,8 @@ class SemanticAnalyzer:
                     raise TypeError(f'Invalid operand type for {node.operator}: {operand_type}')
                 return PrimitiveType(TokenType.BOOL)
             case TokenType.INCREMENT | TokenType.DECREMENT:
+                if not self._is_assignable(node.operand):
+                    raise TypeError(f'Invalid assignment target for {node.operator}')
                 if operand_type not in {PrimitiveType(TokenType.INT), PrimitiveType(TokenType.FLOAT)}:
                     raise TypeError(f'Invalid operand type for {node.operator}: {operand_type}')
                 return operand_type
@@ -296,17 +310,14 @@ class SemanticAnalyzer:
         """
         if isinstance(node.left, Identifier):
             var_name = node.left.name
-        elif isinstance(node.left, IndexExpression):
+        elif isinstance(node.left, IndexExpression) and isinstance(node.left.array, Identifier):
             var_name = node.left.array.name
         else:
             raise TypeError('Invalid assignment target')
 
-        for scope in reversed(self.symbol_table.scopes):
-            # Check if the variable is declared within the function scope
-            if var_name in [symbol.name for symbol in scope.values()]:
-                break
-            if scope == self.symbol_table.get_current_function_scope():
-                raise NameError(f'Variable "{var_name}" not declared in the function scope')
+
+        if not self.symbol_table.lookup(var_name, True):
+            raise NameError(f'Variable "{var_name}" not declared')
 
         left_type = self.analyze(node.left)
         right_type = self.analyze(node.right)
@@ -375,7 +386,7 @@ class SemanticAnalyzer:
         Raises:
             NameError: If the identifier is not declared.
         """
-        symbol = self.symbol_table.lookup(node.name)
+        symbol = self.symbol_table.lookup(node.name, True)
         if not symbol:
             raise NameError(f'Variable "{node.name}" not declared')
 
@@ -437,3 +448,12 @@ class SemanticAnalyzer:
             raise TypeError('Indexing non-array type')
 
         return array_type.element_type
+
+    def _is_assignable(self, node: Expression) -> bool:
+        if isinstance(node, Identifier):
+            return True
+
+        if isinstance(node, IndexExpression):
+            return self._is_assignable(node.array)
+
+        return False

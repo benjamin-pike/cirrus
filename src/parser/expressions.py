@@ -121,7 +121,7 @@ class ExpressionParser(ExpressionParserABC):
         token = self.parser.current()
 
         # Prefix unary operators
-        if token.type in {TokenType.INCREMENT, TokenType.DECREMENT}:
+        if token.type in {TokenType.INCREMENT, TokenType.DECREMENT, TokenType.LOGICAL_NOT}:
             self.parser.consume(token.type)
             operand = self.parse_unary_expression()
             return UnaryExpression(token.type, operand, 'PRE')
