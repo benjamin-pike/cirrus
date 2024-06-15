@@ -2,7 +2,7 @@ from typing import *
 from lexer.token import Token
 from lexer.tokens import TokenType
 from syntax.ast import Program
-from parser.types import ParserABC
+from parser.typing import ParserABC
 from parser.statements import StatementParser
 
 class Parser(ParserABC):
