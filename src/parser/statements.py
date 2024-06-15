@@ -210,7 +210,7 @@ class StatementParser(StatementParserABC):
             ReturnStatement: The parsed return statement.
         """
         self.parser.consume(TokenType.RETURN)
-        expr = self.expression_parser.parse_expression()
+        expr = None if self.parser.current().type == TokenType.SEMICOLON else self.expression_parser.parse_expression()
         self.parser.consume(TokenType.SEMICOLON)
 
         return ReturnStatement(expr)

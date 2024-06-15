@@ -145,7 +145,7 @@ def test_halt_statement():
         while x < 10 {
             x++;
             if x == 5 {
-                halt; // skip the current iteration
+                halt; // halt execution of the loop
             }
             echo x;
         }
@@ -155,7 +155,7 @@ def test_halt_statement():
 def test_invalid_skip_statement():
     code = """
         if true {
-            skip; // halt statement is only allowed in loop scopes
+            skip; // skip statement is only allowed in loop scopes
         }
     """
 
@@ -203,4 +203,100 @@ def test_variable_lifetime():
         echo y; // y should not be accessible here
     """
     with pytest.raises(NameError, match=r'Variable "y" not declared'):
+        analyze_code(code)
+
+def test_return_statement_reachability():
+    code = """
+        func foo -> void = [] >> {
+            return;
+            echo "This should be unreachable";  // Unreachable code
+        }
+    """
+    with pytest.raises(SyntaxError, match=r'Unreachable code detected'):
+        analyze_code(code)
+
+def test_halt_statement_reachability():
+    code = """
+        while true {
+            halt;
+            echo "This should be unreachable";  // Unreachable code
+        }
+    """
+    with pytest.raises(SyntaxError, match=r'Unreachable code detected'):
+        analyze_code(code)
+
+def test_skip_statement_reachability():
+    code = """
+        while true {
+            skip;
+            echo "This should be unreachable";  // Unreachable code
+        }
+    """
+    with pytest.raises(SyntaxError, match=r'Unreachable code detected'):
+        analyze_code(code)
+
+def test_valid_control_flow_statement_use():
+    code = """
+        func main -> int = [] >> {
+            int x = 0;
+
+            while x < 10 {
+                x++;
+                if x == 5 { skip; }
+                if x == 7 { halt; }
+                echo x;
+            }
+
+            return x;
+        }
+
+        main();
+    """
+    analyze_code(code)
+
+def test_nested_if_else_reachability():
+    code = """
+        func foo -> void = [] >> {
+            int x = 5;
+
+            if x > 3 {
+                if x < 10 {
+                    return;
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
+
+            echo "This should be unreachable";  // Unreachable code
+        }
+    """
+    with pytest.raises(SyntaxError, match=r'Unreachable code detected'):
+        analyze_code(code)
+
+def test_unreachable_if_block():
+    code = """
+        func foo -> void = [] >> {
+            if false {
+                echo "This should be unreachable";  // Unreachable code
+            } else {
+                return;
+            }
+        }
+    """
+    with pytest.raises(SyntaxError, match=r'Unreachable if block detected'):
+        analyze_code(code)
+
+def test_unreachable_else_block():
+    code = """
+        func foo -> void = [] >> {
+            if true {
+                return;
+            } else {
+                echo "This should be unreachable";  // Unreachable code
+            }
+        }
+    """
+    with pytest.raises(SyntaxError, match=r'Unreachable else block detected'):
         analyze_code(code)
