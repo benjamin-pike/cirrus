@@ -1,6 +1,6 @@
 from typing import *
 from lexer.tokens import TokenType
-from parser.types import ParserABC, StatementParserABC
+from parser.typing import ParserABC, StatementParserABC
 from parser.expressions import ExpressionParser
 from semantic.types import ArrayType, FunctionType, InferType, PrimitiveType, VarType, VoidType
 from syntax.ast import (

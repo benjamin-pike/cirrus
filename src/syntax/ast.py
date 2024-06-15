@@ -7,7 +7,7 @@ class Statement(Node): ...
 class Expression(Node): ...
 
 # Program
-class Program(Statement):
+class Program(Node):
     def __init__(self, body: List[Statement]) -> None:
         self.body: List[Statement] = body
     def __repr__(self) -> str:

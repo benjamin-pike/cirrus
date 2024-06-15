@@ -1,7 +1,7 @@
 from typing import *
 from lexer.tokens import TokenType
 from parser.helpers import get_precedence
-from parser.types import ParserABC, ExpressionParserABC
+from parser.typing import ParserABC, ExpressionParserABC
 from syntax.ast import (
     BooleanLiteral, Expression, AssignmentExpression, Identifier, BinaryExpression, StringLiteral,
     UnaryExpression, NumericLiteral, CallExpression, ArrayLiteral, IndexExpression
