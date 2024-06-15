@@ -83,7 +83,7 @@ def test_invalid_pipe_expression():
     check(code)
 
 def test_invalid_return_statement():
-    code = "return;"
+    code = "return"
     check(code)
 
 def test_incomplete_block_statement():
@@ -91,7 +91,7 @@ def test_incomplete_block_statement():
     check(code)
 
 def test_invalid_assignment():
-    code = "x == 10;"
+    code = "int x == 10;"
     check(code)
 
 def test_double_variable_declaration():

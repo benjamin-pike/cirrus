@@ -55,31 +55,30 @@ python setup.py
 ## Language Syntax
 ### Variable Declarations
 ```
-let x = 10;
+int x = 10;
+string y = 'Hello, World!';
+bool z = true;
 ```
 
 ### Function Definitions
 ```
-func add = [a, b] >> {
+func add -> int = [int a, int b] >> {
     return a + b;
 }
 ```
 
 ### Array Methods and Chaining
 ```
-let numbers = [1, 2, 3, 4, 5];
-let result = numbers
-    | map(x >> x * 2)
-    | filter(x >> x > 5)
-    | reduce((acc, x) >> acc + x, 0);
+int[] numbers = [1, 2, 3, 4, 5];
+int result = numbers >> map(double) >> reduce(add)
 ```
 
 ### Conditional Statements
 ```
 if x > 10 {
-    return "Greater than 10";
+    echo 'Greater than 10';
 } else {
-    return "Less than or equal to 10";
+    echo 'Less than or equal to 10';
 }
 ```
 
@@ -124,8 +123,9 @@ The project is organised into several directories, each responsible for a differ
 ### Details
 - **src/**: Contains the source code.
   - **lexer/**: Lexer implementation.
-  - **parser/**: Parser implementation.
+  - **parser/**: Parser components.
   - **ast/**: AST nodes.
+  - **semantic/**: Semantic analyzer components.
 - **tests/**: Unit tests for each component.
 - **examples/**: Example programs written in the language.
 - **scripts/**: Helper scripts for building, testing, and running the project.

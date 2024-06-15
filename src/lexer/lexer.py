@@ -17,8 +17,7 @@ class Lexer:
     """
 
     def __init__(self, code: str) -> None:
-        """
-        Initialises the Lexer with the source code and sets the initial positions.
+        """ Initialises the Lexer with the source code and sets the initial positions.
 
         Args:
             code (str): The source code to be tokenised.
@@ -29,8 +28,7 @@ class Lexer:
         self.pos: int = 0
 
     def tokenize(self) -> Generator[Token, None, None]:
-        """
-        Tokenises the source code into a sequence of tokens.
+        """ Tokenises the source code into a sequence of tokens.
 
         Yields:
             Token: The next token in the source code.
@@ -61,7 +59,7 @@ class Lexer:
                 case TokenType.NEWLINE:
                     self.line += 1
                     self.column = 1
-                case TokenType.SKIP:
+                case TokenType.GAP:
                     self.column += len(value)  # Skip whitespace
                 case TokenType.EOL_COMMENT:
                     self.line += 1
@@ -81,8 +79,7 @@ class Lexer:
         yield Token(TokenType.EOF, '', self.line, self.column)  # End of file token
 
     def _match_string(self, token_type: str, value: str) -> Generator[Token, None, None]:
-        """
-        Handles the tokenization of string literals.
+        """ Handles the tokenization of string literals.
 
         Args:
             token_type (str): The type of the string token (single or double quote).

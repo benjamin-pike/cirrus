@@ -3,6 +3,7 @@ import argparse
 from lexer.lexer import Lexer
 from lexer.token import Token
 from parser.parser import Parser
+from semantic.analyzer import SemanticAnalyzer
 
 def main(file_path: str) -> None:
     with open(file_path, 'r') as file:
@@ -12,7 +13,11 @@ def main(file_path: str) -> None:
     tokens: List[Token] = list(lexer.tokenize())
     parser: Parser = Parser(list(tokens))
 
-    print(parser.parse())
+    ast = parser.parse()
+    analyzer = SemanticAnalyzer()
+    analyzer.analyze(ast)
+
+    print(ast)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a .crs script file.")

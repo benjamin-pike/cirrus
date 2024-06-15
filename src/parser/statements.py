@@ -1,12 +1,11 @@
 from typing import *
 from lexer.tokens import TokenType
-from parser.types import ParserABC, StatementParserABC
+from parser.typing import ParserABC, StatementParserABC
 from parser.expressions import ExpressionParser
-from semantic.types import ArrayType, PrimitiveType, VarType
+from semantic.types import ArrayType, FunctionType, InferType, PrimitiveType, VarType, VoidType
 from syntax.ast import (
-    EchoStatement, Statement, ExpressionStatement, VariableDeclaration, BlockStatement, IfStatement,
-    WhileStatement, RangeStatement, EachStatement, ReturnStatement, FunctionDeclaration,
-    NumericLiteral
+    EchoStatement, HaltStatement, SkipStatement, Statement, ExpressionStatement, VariableDeclaration, BlockStatement,
+    IfStatement, WhileStatement, RangeStatement, EachStatement, ReturnStatement, FunctionDeclaration, NumericLiteral
 )
 
 class StatementParser(StatementParserABC):
@@ -18,8 +17,7 @@ class StatementParser(StatementParserABC):
         expression_parser (ExpressionParser): An instance of ExpressionParser to handle expression parsing.
     """
     def __init__(self, parser: ParserABC) -> None:
-        """
-        Initialises the StatementParser with the main parser and initialises the expression parser.
+        """ Initialises the StatementParser with the main parser and initialises the expression parser.
 
         Args:
             parser (ParserABC): The main parser instance.
@@ -28,8 +26,7 @@ class StatementParser(StatementParserABC):
         self.expression_parser = ExpressionParser(parser)
 
     def parse_statements(self) -> List[Statement]:
-        """
-        Iteratively parses statements until the end of the file.
+        """ Iteratively parses statements until the end of the file.
 
         Returns:
             List[Statement]: A list of parsed statements.
@@ -41,8 +38,7 @@ class StatementParser(StatementParserABC):
         return statements
 
     def parse_statement(self) -> Statement:
-        """
-        Parses a single statement based on the current token type.
+        """ Parses a single statement based on the current token type.
 
         Returns:
             Statement: The parsed statement.
@@ -50,7 +46,7 @@ class StatementParser(StatementParserABC):
         current = self.parser.current()
 
         match current.type:
-            case TokenType.INT | TokenType.FLOAT | TokenType.STRING | TokenType.BOOL:
+            case TokenType.INT | TokenType.FLOAT | TokenType.STRING | TokenType.BOOL | TokenType.INFER:
                 return self.parse_variable_declaration()
             case TokenType.LBRACE:
                 return self.parse_block_statement()
@@ -62,10 +58,14 @@ class StatementParser(StatementParserABC):
                 return self.parse_range_statement()
             case TokenType.EACH:
                 return self.parse_each_statement()
-            case TokenType.RETURN:
-                return self.parse_return_statement()
+            case TokenType.HALT:
+                return self.parse_halt_statement()
+            case TokenType.SKIP:
+                return self.parse_skip_statement()
             case TokenType.FUNC:
                 return self.parse_function_declaration()
+            case TokenType.RETURN:
+                return self.parse_return_statement()
             case TokenType.ECHO:
                 return self.parse_echo_statement()
             case _:
@@ -73,8 +73,7 @@ class StatementParser(StatementParserABC):
                 return self.parse_expression_statement()
 
     def parse_expression_statement(self) -> ExpressionStatement:
-        """
-        Parses an expression statement.
+        """ Parses an expression statement.
 
         Returns:
             ExpressionStatement: The parsed expression statement.
@@ -85,8 +84,7 @@ class StatementParser(StatementParserABC):
         return ExpressionStatement(expr)
 
     def parse_variable_declaration(self) -> VariableDeclaration:
-        """
-        Parses a variable declaration statement.
+        """ Parses a variable declaration statement.
 
         Returns:
             VariableDeclaration: The parsed variable declaration.
@@ -101,8 +99,7 @@ class StatementParser(StatementParserABC):
         return VariableDeclaration(name.value, var_type, initializer)
 
     def parse_block_statement(self) -> BlockStatement:
-        """
-        Parses a block statement.
+        """ Parses a block statement.
 
         Returns:
             BlockStatement: The parsed block statement.
@@ -118,8 +115,7 @@ class StatementParser(StatementParserABC):
         return BlockStatement(statements)
 
     def parse_if_statement(self) -> IfStatement:
-        """
-        Parses an if statement.
+        """ Parses an if statement.
 
         Returns:
             IfStatement: The parsed if statement.
@@ -137,8 +133,7 @@ class StatementParser(StatementParserABC):
         return IfStatement(condition, then_block, else_block)
 
     def parse_while_statement(self) -> WhileStatement:
-        """
-        Parses a while statement.
+        """ Parses a while statement.
 
         Returns:
             WhileStatement: The parsed while statement.
@@ -150,8 +145,7 @@ class StatementParser(StatementParserABC):
         return WhileStatement(condition, body)
 
     def parse_range_statement(self) -> RangeStatement:
-        """
-        Parses a range statement.
+        """ Parses a range statement.
 
         Returns:
             RangeStatement: The parsed range statement.
@@ -174,8 +168,7 @@ class StatementParser(StatementParserABC):
         return RangeStatement(identifier.value, start, end, increment, body)
 
     def parse_each_statement(self) -> EachStatement:
-        """
-        Parses an each statement.
+        """ Parses an each statement.
 
         Returns:
             EachStatement: The parsed each statement.
@@ -188,22 +181,42 @@ class StatementParser(StatementParserABC):
 
         return EachStatement(identifier.value, iterable, body)
 
-    def parse_return_statement(self) -> ReturnStatement:
+    def parse_halt_statement(self) -> HaltStatement:
+        """ Parses a halt statement.
+
+        Returns:
+            HaltStatement: The parsed halt statement.
         """
-        Parses a return statement.
+        self.parser.consume(TokenType.HALT)
+        self.parser.consume(TokenType.SEMICOLON)
+
+        return HaltStatement()
+
+    def parse_skip_statement(self) -> SkipStatement:
+        """ Parses a skip statement.
+
+        Returns:
+            SkipStatement: The parsed skip statement.
+        """
+        self.parser.consume(TokenType.SKIP)
+        self.parser.consume(TokenType.SEMICOLON)
+
+        return SkipStatement()
+
+    def parse_return_statement(self) -> ReturnStatement:
+        """ Parses a return statement.
 
         Returns:
             ReturnStatement: The parsed return statement.
         """
         self.parser.consume(TokenType.RETURN)
-        expr = self.expression_parser.parse_expression()
+        expr = None if self.parser.current().type == TokenType.SEMICOLON else self.expression_parser.parse_expression()
         self.parser.consume(TokenType.SEMICOLON)
 
         return ReturnStatement(expr)
 
     def parse_function_declaration(self) -> FunctionDeclaration:
-        """
-        Parses a function declaration statement.
+        """ Parses a function declaration statement.
 
         Returns:
             FunctionDeclaration: The parsed function declaration.
@@ -211,7 +224,7 @@ class StatementParser(StatementParserABC):
         self.parser.consume(TokenType.FUNC)
         name = self.parser.consume(TokenType.IDENTIFIER)
         self.parser.consume(TokenType.RETURN_ARROW)
-        return_type = self._parse_var_type()
+        return_type = self._parse_return_type()
         self.parser.consume(TokenType.ASSIGN)
         self.parser.consume(TokenType.LBRACKET)
 
@@ -231,11 +244,10 @@ class StatementParser(StatementParserABC):
         self.parser.consume(TokenType.ARROW)
         body = self.parse_block_statement()
 
-        return FunctionDeclaration(name.value, return_type, parameters, body)
+        return FunctionDeclaration(name.value, FunctionType(return_type, parameters), body)
 
     def parse_echo_statement(self) -> EchoStatement:
-        """
-        Parses an echo statement.
+        """ Parses an echo statement.
 
         Returns:
             EchoStatement: The parsed echo statement.
@@ -247,12 +259,15 @@ class StatementParser(StatementParserABC):
         return EchoStatement(expr)
 
     def _parse_var_type(self) -> VarType:
-        """
-        Parses a variable type.
+        """ Parses a variable type.
+        Delegates to _parse_function_type if the `func` keyword is encountered.
 
         Returns:
             Type: The parsed variable type.
         """
+
+        if self.parser.current().type == TokenType.FUNC:
+            return self._parse_function_type()
 
         match self.parser.current().type:
             case TokenType.INT:
@@ -263,6 +278,10 @@ class StatementParser(StatementParserABC):
                 var_type = PrimitiveType(self.parser.consume(TokenType.STRING).type)
             case TokenType.BOOL:
                 var_type = PrimitiveType(self.parser.consume(TokenType.BOOL).type)
+            case TokenType.INFER:
+                var_type = InferType()
+                self.parser.consume(TokenType.INFER)
+
             case _:
                 raise SyntaxError(f'Unexpected token {self.parser.current()}')
 
@@ -273,3 +292,39 @@ class StatementParser(StatementParserABC):
             var_type = ArrayType(var_type)
 
         return var_type
+
+    def _parse_return_type(self) -> VarType:
+        """ Parses a return type for a function declaration.
+        Extends the _parse_var_type method to handle the `void` keyword.
+
+        Returns:
+            VarType: The parsed return type.
+        """
+        if self.parser.current().type == TokenType.VOID:
+            self.parser.consume(TokenType.VOID)
+            return VoidType()
+
+        return self._parse_var_type()
+
+    def _parse_function_type(self):
+        self.parser.consume(TokenType.FUNC)
+        self.parser.consume(TokenType.LT)
+
+        return_type = self._parse_return_type()
+
+        self.parser.consume(TokenType.COMMA)
+        self.parser.consume(TokenType.LBRACKET)
+
+        parameters: List[Tuple[str, VarType]] = []
+        while self.parser.current().type != TokenType.RBRACKET:
+            var_type = self._parse_var_type()
+            identifier = self.parser.consume(TokenType.IDENTIFIER).value
+            parameters.append((identifier, var_type))
+
+            if self.parser.current().type == TokenType.COMMA:
+                self.parser.consume(TokenType.COMMA)
+
+        self.parser.consume(TokenType.RBRACKET)
+        self.parser.consume(TokenType.GT)
+
+        return FunctionType(return_type, parameters)
