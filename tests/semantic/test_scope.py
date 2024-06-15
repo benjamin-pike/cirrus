@@ -139,6 +139,29 @@ def test_range_statement():
     """
     analyze_code(code)
 
+def test_halt_statement():
+    code = """
+        int x = 0;
+        while x < 10 {
+            x++;
+            if x == 5 {
+                halt; // skip the current iteration
+            }
+            echo x;
+        }
+    """
+    analyze_code(code)
+
+def test_invalid_skip_statement():
+    code = """
+        if true {
+            skip; // halt statement is only allowed in loop scopes
+        }
+    """
+
+    with pytest.raises(SyntaxError, match=r'Skip statement is not valid outside of a loop block'):
+        analyze_code(code)
+
 def test_block_scope():
     code = """
         int x = 10;

@@ -91,24 +91,6 @@ def test_nested_if_else():
     ])
     check(code, expected)
 
-def test_while_statement():
-    code = """
-        while (x < 10) {
-            x++;
-        }
-    """
-    expected = Program([
-        WhileStatement(
-            BinaryExpression(Identifier("x"), TokenType.LT, NumericLiteral(10)),
-            BlockStatement([
-                ExpressionStatement(
-                    UnaryExpression(TokenType.INCREMENT, Identifier("x"), 'POST')
-                )
-            ])
-        )
-    ])
-    check(code, expected)
-
 def test_unary_expressions():
     code = """
         x++;
@@ -214,6 +196,24 @@ def test_combined_array_example():
     ])
     check(code, expected)
 
+def test_while_statement():
+    code = """
+        while (x < 10) {
+            x++;
+        }
+    """
+    expected = Program([
+        WhileStatement(
+            BinaryExpression(Identifier("x"), TokenType.LT, NumericLiteral(10)),
+            BlockStatement([
+                ExpressionStatement(
+                    UnaryExpression(TokenType.INCREMENT, Identifier("x"), 'POST')
+                )
+            ])
+        )
+    ])
+    check(code, expected)
+
 def test_each_statement():
     code = """
         each x in [1, 2, 3] {
@@ -243,6 +243,55 @@ def test_range_statement():
             NumericLiteral(10),
             NumericLiteral(1),
             BlockStatement([ReturnStatement(Identifier("x"))])
+        )
+    ])
+    check(code, expected)
+
+def test_halt_statement():
+    code = """
+        range x in 0 to 10 {
+            if x == 5 {
+                halt;
+            }
+        }
+    """
+    expected = Program([
+        RangeStatement(
+            "x",
+            NumericLiteral(0),
+            NumericLiteral(10),
+            NumericLiteral(1),
+            BlockStatement([
+                IfStatement(
+                    BinaryExpression(Identifier("x"), TokenType.EQUAL, NumericLiteral(5)),
+                    BlockStatement([HaltStatement()]),
+                    None
+                )
+            ])
+        )
+    ])
+    check(code, expected)
+
+def test_skip_statement():
+    code = """
+        each x in [1, 2, 3, 4] {
+            if isEven(x) {
+                skip;
+            }
+        }
+    """
+
+    expected = Program([
+        EachStatement(
+            "x",
+            ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3), NumericLiteral(4)]),
+            BlockStatement([
+                IfStatement(
+                    CallExpression(Identifier("isEven"), [Identifier("x")]),
+                    BlockStatement([SkipStatement()]),
+                    None
+                )
+            ])
         )
     ])
     check(code, expected)
