@@ -83,7 +83,7 @@ def test_invalid_pipe_expression():
     check(code)
 
 def test_invalid_return_statement():
-    code = "return;"
+    code = "return"
     check(code)
 
 def test_incomplete_block_statement():

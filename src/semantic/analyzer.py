@@ -1,7 +1,7 @@
 from typing import *
 from lexer.tokens import TokenType
 from semantic.symbol import SymbolTable
-from semantic.types import PrimitiveType, InferType, VarType, ArrayType, VoidType
+from semantic.types import PrimitiveType, InferType, VarType, ArrayType, VoidType, FunctionType
 from syntax.ast import *
 from lib.helpers import is_iterable, pascal_to_snake_case
 
@@ -22,7 +22,13 @@ class SemanticAnalyzer:
 
         Returns:
             VarType: The type of the node.
+
+        Raises:
+            SyntaxError: If unreachable code is detected.
         """
+        if not self.symbol_table.is_reachable():
+            raise SyntaxError(f"Unreachable code detected at {node}")
+
         method_name = f'analyze_{pascal_to_snake_case(type(node).__name__)}'
         analyze = getattr(self, method_name, self.analyze_generic)
         return analyze(node)
@@ -71,6 +77,11 @@ class SemanticAnalyzer:
 
         Returns:
             VarType: The type of the variable.
+
+        Raises:
+            NameError: If the variable is redeclared.
+            NameError: If the variable shadows an existing variable.
+            TypeError: If the variable type does not match the initializer type.
         """
         init_type = self.analyze(node.initializer)
 
@@ -100,6 +111,9 @@ class SemanticAnalyzer:
 
         Returns:
             VarType: The return type of the function.
+
+        Raises:
+            NameError: If the function is redeclared.
         """
         if self.symbol_table.lookup(node.name, True):
             raise NameError(f'Cannot redeclare function "{node.name}"')
@@ -122,11 +136,16 @@ class SemanticAnalyzer:
 
         Returns:
             VoidType: Void type.
+
+        Raises:
+            SyntaxError: If unreachable code is detected.
         """
         if new_scope:
             self.symbol_table.enter_scope()
 
         for statement in node.statements:
+            if not self.symbol_table.is_reachable():
+                raise SyntaxError(f"Unreachable code detected at {statement}")
             self.analyze(statement)
 
         if new_scope:
@@ -142,15 +161,55 @@ class SemanticAnalyzer:
 
         Returns:
             VoidType: Void type.
+
+        Raises:
+            TypeError: If the condition is not a boolean.
+            SyntaxError: If unreachable code is detected.
         """
+        if not self.symbol_table.is_reachable():
+            raise SyntaxError(f"Unreachable code detected at {node}")
+
         cond_type = self.analyze(node.condition)
         if cond_type != PrimitiveType(TokenType.BOOL):
             raise TypeError('Condition of if statement must be a boolean')
-        self.analyze_block_statement(node.then_block)
-        if node.else_block:
-            self.analyze_block_statement(node.else_block)
+
+        if isinstance(node.condition, BooleanLiteral) and node.condition.value is True:
+            then_reachable = self._analyze_then_block(node)
+            if node.else_block:
+                raise SyntaxError(f"Unreachable else block detected")
+
+        elif isinstance(node.condition, BooleanLiteral) and node.condition.value is False:
+            if node.then_block.statements:
+                raise SyntaxError(f"Unreachable if block detected")
+            self._analyze_else_block(node)
+
+        else:
+            then_reachable = self._analyze_then_block(node)
+            else_reachable = self._analyze_else_block(node)
+
+            if not then_reachable and not else_reachable:
+                self.symbol_table.set_unreachable()
 
         return VoidType()
+
+    def _analyze_then_block(self, node: IfStatement):
+            self.symbol_table.enter_scope(node)
+            self.analyze_block_statement(node.then_block, False)
+            then_reachable = self.symbol_table.is_reachable()
+            self.symbol_table.exit_scope()
+
+            return then_reachable
+
+    def _analyze_else_block(self, node: IfStatement):
+        if node.else_block:
+            self.symbol_table.enter_scope(node)
+            self.analyze_block_statement(node.else_block, False)
+            else_reachable = self.symbol_table.is_reachable()
+            self.symbol_table.exit_scope()
+
+            return else_reachable
+
+        return True
 
     def analyze_while_statement(self, node: WhileStatement) -> VoidType:
         """ Analyses a WhileStatement node, checking the condition and body.
@@ -160,10 +219,14 @@ class SemanticAnalyzer:
 
         Returns:
             VarType: The type of the while statement.
+
+        Raises:
+            TypeError: If the condition is not a boolean.
         """
         cond_type = self.analyze(node.condition)
         if cond_type != PrimitiveType(TokenType.BOOL):
             raise TypeError('Condition of while statement must be a boolean')
+
         self.symbol_table.enter_scope(node)
         self.analyze_block_statement(node.body, False)
         self.symbol_table.exit_scope()
@@ -178,6 +241,9 @@ class SemanticAnalyzer:
 
         Returns:
             VoidType: Void type.
+
+        Raises:
+            TypeError: If the range boundaries and increment are not integers.
         """
         start_type = self.analyze(node.start)
         end_type = self.analyze(node.end)
@@ -206,6 +272,9 @@ class SemanticAnalyzer:
 
         Returns:
             VoidType: Void type.
+
+        Raises:
+            TypeError: If the iterable is not an array.
         """
         iterable_type = self.analyze(node.iterable)
         if not isinstance(iterable_type, ArrayType):
@@ -220,14 +289,27 @@ class SemanticAnalyzer:
         return VoidType()
 
     def analyze_halt_statement(self, node: HaltStatement) -> VoidType:
+        """ Analyses a HaltStatement node, marking the current scope as unreachable.
+
+        Args:
+            node (HaltStatement): The HaltStatement node to analyse.
+
+        Returns:
+            VoidType: Void type.
+
+        Raises:
+            SyntaxError: If the halt statement is not within a loop block.
+        """
         if not self.symbol_table.is_loop_scope():
             raise SyntaxError('Halt statement is not valid outside of a loop block')
+        self.symbol_table.set_unreachable()
 
         return VoidType()
 
     def analyze_skip_statement(self, node: SkipStatement) -> VoidType:
         if not self.symbol_table.is_loop_scope():
             raise SyntaxError('Skip statement is not valid outside of a loop block')
+        self.symbol_table.set_unreachable()
 
         return VoidType()
 
@@ -245,6 +327,18 @@ class SemanticAnalyzer:
         return VoidType()
 
     def analyze_return_statement(self, node: ReturnStatement) -> VarType:
+        """ Analyses a ReturnStatement node, checking the return type.
+
+        Args:
+            node (ReturnStatement): The ReturnStatement node to analyse.
+
+        Raises:
+            SyntaxError: If the return statement is not within a function block.
+            TypeError: If the return type does not match the function return type.
+
+        Returns:
+            VarType: The return type of the function.
+        """
         fn_type = self.symbol_table.get_current_function_type()
         if not fn_type:
             raise SyntaxError("Return statement is not valid outside of a function block")
@@ -252,9 +346,10 @@ class SemanticAnalyzer:
         return_type = VoidType()
         if node.expression:
             return_type = self.analyze(node.expression)
-
         if return_type != fn_type.return_type:
             raise TypeError(f"Return type {return_type} does not match function return type {fn_type.return_type}")
+
+        self.symbol_table.set_unreachable()
 
         return return_type
 
@@ -267,6 +362,10 @@ class SemanticAnalyzer:
 
         Returns:
             VarType: The type of the binary expression.
+
+        Raises:
+            TypeError: If the operand types do not match the operator.
+            TypeError: If the operator is invalid.
         """
         left_type = self.analyze(node.left)
         right_type = self.analyze(node.right)
@@ -300,6 +399,10 @@ class SemanticAnalyzer:
 
         Returns:
             VarType: The type of the unary expression.
+
+        Raises:
+            TypeError: If the operand type does not match the operator.
+            TypeError: If the operator is invalid.
         """
         operand_type = self.analyze(node.operand)
 
@@ -326,6 +429,11 @@ class SemanticAnalyzer:
 
         Returns:
             VarType: The type of the assignment expression.
+
+        Raises:
+            NameError: If the variable is not declared.
+            TypeError: If the variable type does not match the assigned value type.
+            TypeError: If the assignment target is invalid.
         """
         if isinstance(node.left, Identifier):
             var_name = node.left.name
@@ -333,7 +441,6 @@ class SemanticAnalyzer:
             var_name = node.left.array.name
         else:
             raise TypeError('Invalid assignment target')
-
 
         if not self.symbol_table.lookup(var_name, True):
             raise NameError(f'Variable "{var_name}" not declared')
@@ -412,6 +519,20 @@ class SemanticAnalyzer:
         return symbol.var_type
 
     def analyze_call_expression(self, node: CallExpression) -> VarType:
+        """ Analyses a CallExpression node, checking the function declaration and argument types.
+
+        Args:
+            node (CallExpression): The CallExpression node to analyse.
+
+        Raises:
+            NameError: If the function is not declared.
+            TypeError: If the function is not a function type.
+            TypeError: If the number of arguments does not match the function declaration.
+            TypeError: If the argument types do not match the function declaration.
+
+        Returns:
+            VarType: The return type of the function.
+        """
         symbol = self.symbol_table.lookup(node.callee.name)
         if symbol is None:
             raise NameError(f"Function {node.callee.name} not declared")
@@ -437,6 +558,9 @@ class SemanticAnalyzer:
 
         Returns:
             VarType: The type of the array.
+
+        Raises:
+            TypeError: If the element types are inconsistent.
         """
         if not node.elements:
             return ArrayType(PrimitiveType(TokenType.NULL))
@@ -456,6 +580,10 @@ class SemanticAnalyzer:
 
         Returns:
             VarType: The type of the indexed value.
+
+        Raises:
+            TypeError: If the array index is not an integer.
+            TypeError: If the array is not an array type.
         """
 
         index_type = self.analyze(node.index)

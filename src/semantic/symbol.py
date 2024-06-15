@@ -28,6 +28,7 @@ class Scope:
     def __init__(self, parent_node: Optional[Statement] = None) -> None:
         self.symbols: Dict[str, Symbol] = {}
         self.parent_node = parent_node
+        self.reachable = True
 
     def __repr__(self) -> str:
         return f'Scope(parent_node={self.parent_node}, symbols={list(self.symbols.keys())})'
@@ -130,3 +131,22 @@ class SymbolTable:
                 return True
 
         return False
+
+    def is_reachable(self) -> bool:
+        """ Checks if the current scope is reachable.
+
+        Returns:
+            bool: True if the current scope is reachable, otherwise False.
+        """
+
+        for scope in reversed(self.scopes):
+            if not scope.reachable:
+                return False
+
+        return True
+
+    def set_unreachable(self) -> None:
+        """ Marks the current scope as unreachable.
+        """
+
+        self.scopes[-1].reachable = False
