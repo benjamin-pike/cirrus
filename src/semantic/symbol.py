@@ -1,5 +1,6 @@
 from typing import *
 from semantic.types import FunctionType, VarType
+from syntax.ast import EachStatement, FunctionDeclaration, RangeStatement, Statement, WhileStatement
 
 class Symbol:
     """
@@ -24,12 +25,12 @@ class Scope:
         symbols (Dict[str, Symbol]): A dictionary mapping names to symbols.
         function_type (Optional[FunctionType]): The function type if this scope is a function scope, otherwise None.
     """
-    def __init__(self, function_type: Optional[FunctionType] = None) -> None:
+    def __init__(self, parent_node: Optional[Statement] = None) -> None:
         self.symbols: Dict[str, Symbol] = {}
-        self.function_type = function_type
+        self.parent_node = parent_node
 
     def __repr__(self) -> str:
-        return f'Scope(function_type={self.function_type}, symbols={list(self.symbols.keys())})'
+        return f'Scope(parent_node={self.parent_node}, symbols={list(self.symbols.keys())})'
 
 class SymbolTable:
     """
@@ -42,13 +43,13 @@ class SymbolTable:
         """Initializes the symbol table with an empty global scope."""
         self.scopes: List[Scope] = [Scope()]
 
-    def enter_scope(self, function_type: Optional[FunctionType] = None) -> None:
+    def enter_scope(self, parent_node: Optional[Statement] = None) -> None:
         """Enters a new scope, optionally as a function scope.
 
         Args:
-            function_type (Optional[FunctionType]): If provided, the new scope is a function scope with the given function type.
+            parent_node (Optional[Statement]): The parent node of the scope.
         """
-        self.scopes.append(Scope(function_type))
+        self.scopes.append(Scope(parent_node))
 
     def exit_scope(self) -> None:
         """Exits the current scope by popping it off the scope stack.
@@ -89,10 +90,8 @@ class SymbolTable:
         for scope in reversed(self.scopes):
             if name in scope.symbols:
                 return scope.symbols[name]
-            if limit_to_function and scope.function_type is not None:
+            if limit_to_function and isinstance(scope.parent_node, FunctionDeclaration):
                 break
-
-        return
 
     def get_scope(self, symbol: Symbol) -> Optional[Scope]:
         """Gets the scope containing the given symbol.
@@ -107,16 +106,27 @@ class SymbolTable:
             if symbol in scope.symbols.values():
                 return scope
 
-        return
-
-    def get_current_function_scope(self) -> Optional[Scope]:
+    def get_current_function_type(self) -> Optional[FunctionType]:
         """Gets the function type of the current function scope, if any.
 
         Returns:
             Optional[FunctionType]: The function type if in a function, otherwise None.
         """
         for scope in reversed(self.scopes):
-            if scope.function_type is not None:
-                return scope
+            if isinstance(scope.parent_node, FunctionDeclaration):
+                return scope.parent_node.function_type
 
-        return
+    def is_loop_scope(self) -> bool:
+        """ Checks if the current scope is within a loop.
+
+        Returns:
+            bool: True if the current scope is within a loop, otherwise False.
+        """
+
+        for scope in reversed(self.scopes):
+            if scope.parent_node and isinstance(scope.parent_node, FunctionDeclaration):
+                return False
+            if scope.parent_node and isinstance(scope.parent_node, (WhileStatement, RangeStatement, EachStatement)):
+                return True
+
+        return False

@@ -59,7 +59,7 @@ class Lexer:
                 case TokenType.NEWLINE:
                     self.line += 1
                     self.column = 1
-                case TokenType.SKIP:
+                case TokenType.GAP:
                     self.column += len(value)  # Skip whitespace
                 case TokenType.EOL_COMMENT:
                     self.line += 1

@@ -13,6 +13,8 @@ class TokenType(Enum):
     IN = auto()                 # "in"
     TO = auto()                 # "to"
     BY = auto()                 # "by"
+    HALT = auto()               # "halt"
+    SKIP = auto()               # "skip"
 
     INT = auto()                # "int"
     FLOAT = auto()              # "float"
@@ -87,7 +89,7 @@ class TokenType(Enum):
     EOF = auto()
 
     # Other
-    SKIP = auto()
+    GAP = auto()
     NEWLINE = auto()
     MISMATCH = auto()
 '''
@@ -108,6 +110,8 @@ spec = (
     (TokenType.IN, r'\bin\b'),
     (TokenType.TO, r'\bto\b'),
     (TokenType.BY, r'\bby\b'),
+    (TokenType.HALT, r'\bhalt\b'),
+    (TokenType.SKIP, r'\bskip\b'),
 
     (TokenType.INT, r'\bint\b'),
     (TokenType.FLOAT, r'\bfloat\b'),
@@ -137,18 +141,18 @@ spec = (
     (TokenType.INCREMENT, r'\+\+'),
     (TokenType.DECREMENT, r'--'),
 
-    (TokenType.ASSIGN, r'='),
-    (TokenType.PLUS_ASSIGN, r'\+='),
-    (TokenType.MINUS_ASSIGN, r'-='),
-    (TokenType.MULTIPLY_ASSIGN, r'\*='),
-    (TokenType.DIVIDE_ASSIGN, r'/='),
-
     (TokenType.EQUAL, r'=='),
     (TokenType.NOT_EQUAL, r'!='),
     (TokenType.LTE, r'<='),
     (TokenType.GTE, r'>='),
     (TokenType.LT, r'<'),
     (TokenType.GT, r'>'),
+
+    (TokenType.ASSIGN, r'='),
+    (TokenType.PLUS_ASSIGN, r'\+='),
+    (TokenType.MINUS_ASSIGN, r'-='),
+    (TokenType.MULTIPLY_ASSIGN, r'\*='),
+    (TokenType.DIVIDE_ASSIGN, r'/='),
 
     (TokenType.PLUS, r'\+'),
     (TokenType.MINUS, r'-'),
@@ -165,7 +169,7 @@ spec = (
 
     (TokenType.IDENTIFIER, r'[A-Za-z_]\w*'),
 
-    (TokenType.SKIP, r'[ \t]+'),
+    (TokenType.GAP, r'[ \t]+'),
     (TokenType.NEWLINE, r'\n'),
     (TokenType.MISMATCH, r'.')
 )

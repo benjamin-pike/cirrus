@@ -106,15 +106,15 @@ class SemanticAnalyzer:
 
         self.symbol_table.define(node.name, node.function_type)
 
-        self.symbol_table.enter_scope(node.function_type)
+        self.symbol_table.enter_scope(node)
         for param_name, param_type in node.function_type.param_types:
             self.symbol_table.define(param_name, param_type)
-        self.analyze(node.body)
+        self.analyze_block_statement(node.body, False)
         self.symbol_table.exit_scope()
 
         return node.function_type.return_type
 
-    def analyze_block_statement(self, node: BlockStatement) -> VoidType:
+    def analyze_block_statement(self, node: BlockStatement, new_scope: bool = True) -> VoidType:
         """ Analyses a BlockStatement node, managing scope entering and exiting.
 
         Args:
@@ -123,10 +123,14 @@ class SemanticAnalyzer:
         Returns:
             VoidType: Void type.
         """
-        self.symbol_table.enter_scope()
+        if new_scope:
+            self.symbol_table.enter_scope()
+
         for statement in node.statements:
             self.analyze(statement)
-        self.symbol_table.exit_scope()
+
+        if new_scope:
+            self.symbol_table.exit_scope()
 
         return VoidType()
 
@@ -142,9 +146,9 @@ class SemanticAnalyzer:
         cond_type = self.analyze(node.condition)
         if cond_type != PrimitiveType(TokenType.BOOL):
             raise TypeError('Condition of if statement must be a boolean')
-        self.analyze(node.then_block)
+        self.analyze_block_statement(node.then_block)
         if node.else_block:
-            self.analyze(node.else_block)
+            self.analyze_block_statement(node.else_block)
 
         return VoidType()
 
@@ -160,7 +164,9 @@ class SemanticAnalyzer:
         cond_type = self.analyze(node.condition)
         if cond_type != PrimitiveType(TokenType.BOOL):
             raise TypeError('Condition of while statement must be a boolean')
-        self.analyze(node.body)
+        self.symbol_table.enter_scope(node)
+        self.analyze_block_statement(node.body, False)
+        self.symbol_table.exit_scope()
 
         return VoidType()
 
@@ -184,8 +190,10 @@ class SemanticAnalyzer:
         ):
             raise TypeError('Range boundaries and increment must be integers')
 
+        self.symbol_table.enter_scope(node)
         self.symbol_table.define(node.identifier, PrimitiveType(TokenType.INT))
-        self.analyze(node.body)
+        self.analyze_block_statement(node.body, False)
+        self.symbol_table.exit_scope()
 
         return VoidType()
 
@@ -204,10 +212,22 @@ class SemanticAnalyzer:
             raise TypeError('Each statement requires an array type for iteration')
         element_type = iterable_type.element_type
 
-        self.symbol_table.enter_scope()
+        self.symbol_table.enter_scope(node)
         self.symbol_table.define(node.variable, element_type)
-        self.analyze(node.body)
+        self.analyze_block_statement(node.body, False)
         self.symbol_table.exit_scope()
+
+        return VoidType()
+
+    def analyze_halt_statement(self, node: HaltStatement) -> VoidType:
+        if not self.symbol_table.is_loop_scope():
+            raise SyntaxError('Halt statement is not valid outside of a loop block')
+
+        return VoidType()
+
+    def analyze_skip_statement(self, node: SkipStatement) -> VoidType:
+        if not self.symbol_table.is_loop_scope():
+            raise SyntaxError('Skip statement is not valid outside of a loop block')
 
         return VoidType()
 
@@ -225,17 +245,16 @@ class SemanticAnalyzer:
         return VoidType()
 
     def analyze_return_statement(self, node: ReturnStatement) -> VarType:
-        fn_scope = self.symbol_table.get_current_function_scope()
-        if not fn_scope or not fn_scope.function_type:
+        fn_type = self.symbol_table.get_current_function_type()
+        if not fn_type:
             raise SyntaxError("Return statement is not valid outside of a function block")
 
         return_type = VoidType()
         if node.expression:
             return_type = self.analyze(node.expression)
 
-        fn_return_type = fn_scope.function_type.return_type
-        if return_type != fn_return_type:
-            raise TypeError(f"Return type {return_type} does not match function return type {fn_return_type}")
+        if return_type != fn_type.return_type:
+            raise TypeError(f"Return type {return_type} does not match function return type {fn_type.return_type}")
 
         return return_type
 
@@ -449,7 +468,16 @@ class SemanticAnalyzer:
 
         return array_type.element_type
 
+    # Helpers
     def _is_assignable(self, node: Expression) -> bool:
+        """ Checks if an expression is a valid assignment target.
+
+        Args:
+            node (Expression): The expression to check.
+
+        Returns:
+            bool: True if the expression is assignable, otherwise False.
+        """
         if isinstance(node, Identifier):
             return True
 

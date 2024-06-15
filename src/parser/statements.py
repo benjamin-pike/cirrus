@@ -4,9 +4,8 @@ from parser.types import ParserABC, StatementParserABC
 from parser.expressions import ExpressionParser
 from semantic.types import ArrayType, FunctionType, InferType, PrimitiveType, VarType, VoidType
 from syntax.ast import (
-    EchoStatement, Statement, ExpressionStatement, VariableDeclaration, BlockStatement, IfStatement,
-    WhileStatement, RangeStatement, EachStatement, ReturnStatement, FunctionDeclaration,
-    NumericLiteral
+    EchoStatement, HaltStatement, SkipStatement, Statement, ExpressionStatement, VariableDeclaration, BlockStatement,
+    IfStatement, WhileStatement, RangeStatement, EachStatement, ReturnStatement, FunctionDeclaration, NumericLiteral
 )
 
 class StatementParser(StatementParserABC):
@@ -59,10 +58,14 @@ class StatementParser(StatementParserABC):
                 return self.parse_range_statement()
             case TokenType.EACH:
                 return self.parse_each_statement()
-            case TokenType.RETURN:
-                return self.parse_return_statement()
+            case TokenType.HALT:
+                return self.parse_halt_statement()
+            case TokenType.SKIP:
+                return self.parse_skip_statement()
             case TokenType.FUNC:
                 return self.parse_function_declaration()
+            case TokenType.RETURN:
+                return self.parse_return_statement()
             case TokenType.ECHO:
                 return self.parse_echo_statement()
             case _:
@@ -177,6 +180,28 @@ class StatementParser(StatementParserABC):
         body = self.parse_block_statement()
 
         return EachStatement(identifier.value, iterable, body)
+
+    def parse_halt_statement(self) -> HaltStatement:
+        """ Parses a halt statement.
+
+        Returns:
+            HaltStatement: The parsed halt statement.
+        """
+        self.parser.consume(TokenType.HALT)
+        self.parser.consume(TokenType.SEMICOLON)
+
+        return HaltStatement()
+
+    def parse_skip_statement(self) -> SkipStatement:
+        """ Parses a skip statement.
+
+        Returns:
+            SkipStatement: The parsed skip statement.
+        """
+        self.parser.consume(TokenType.SKIP)
+        self.parser.consume(TokenType.SEMICOLON)
+
+        return SkipStatement()
 
     def parse_return_statement(self) -> ReturnStatement:
         """ Parses a return statement.
