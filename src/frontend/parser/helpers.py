@@ -1,15 +1,15 @@
-from lexer.tokens import TokenType
+from frontend.lexer.tokens import TokenType
+
 
 def get_precedence(token_type: TokenType) -> int:
-    '''
-    Returns the precedence of the given token type.
-    
+    """Returns the precedence of the given token type.
+
     Args:
         token_type (TokenType): The token type to get the precedence for.
-        
+
     Returns:
         int: The precedence of the token type.
-    '''
+    """
     precedence = {
         TokenType.LOGICAL_OR: 1,
         TokenType.LOGICAL_AND: 2,
@@ -22,7 +22,7 @@ def get_precedence(token_type: TokenType) -> int:
         TokenType.PLUS: 5,
         TokenType.MINUS: 5,
         TokenType.MULTIPLY: 6,
-        TokenType.DIVIDE: 6
+        TokenType.DIVIDE: 6,
     }
-    
+
     return precedence.get(token_type, 0)

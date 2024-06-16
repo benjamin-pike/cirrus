@@ -1,20 +1,21 @@
 from typing import *
-from lexer.tokens import TokenType
-from semantic.expressions import ExpressionAnalyzer
-from semantic.statements import StatementAnalyzer
-from semantic.symbol import SymbolTable
-from semantic.types import PrimitiveType, VarType, VoidType
-from semantic.typing import SemanticAnalyzerABC
-from syntax.ast import *
+from frontend.lexer.tokens import TokenType
+from frontend.semantic.expressions import ExpressionAnalyzer
+from frontend.semantic.statements import StatementAnalyzer
+from frontend.semantic.symbol import SymbolTable
+from frontend.semantic.types import PrimitiveType, VarType, VoidType
+from frontend.semantic.typing import SemanticAnalyzerABC
+from frontend.syntax.ast import *
 from lib.helpers import is_iterable, pascal_to_snake_case
+
 
 class SemanticAnalyzer(SemanticAnalyzerABC):
     """
-    The SemanticAnalyzer class performs semantic analysis by traversing the AST and ensuring that:
-        1) All variables and functions are declared before use.
-        2) Variables and functions are not redeclared or shadowed in lower scopes.
-        3) Types are compatible in function declarations, expressions, and assignments.
-        4) All code is reachable and flow control statements are used correctly.
+    The SemanticAnalyzer class performs semantic analysis by traversing the AST and ensuring that:\n
+        1) All variables and functions are declared before use.\n
+        2) Variables and functions are not redeclared or shadowed in lower scopes.\n
+        3) Types are compatible in function declarations, expressions, and assignments.\n
+        4) All code is reachable and flow control statements are used correctly.\n
     """
 
     def __init__(self) -> None:
@@ -23,7 +24,7 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
         self.expression_analyzer = ExpressionAnalyzer(self)
 
     def analyze(self, node: Node) -> VarType:
-        """ Analyses a node in the AST.
+        """Analyses a node in the AST.
 
         Args:
             node (Node): The AST node to analyse.
@@ -37,7 +38,7 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
         if not self.symbol_table.is_reachable():
             raise SyntaxError(f"Unreachable code detected at {node}")
 
-        method_name = f'analyze_{pascal_to_snake_case(type(node).__name__)}'
+        method_name = f"analyze_{pascal_to_snake_case(type(node).__name__)}"
 
         analyzer = self
         if isinstance(node, Statement):
@@ -50,7 +51,7 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
         return analyze(node)
 
     def analyze_generic(self, node: Node) -> VarType:
-        """ Called if no explicit analyzer function exists for a node. Recursively analyses children.
+        """Called if no explicit analyzer function exists for a node. Recursively analyses children.
 
         Args:
             node (Node): The AST node to analyse.
@@ -69,7 +70,7 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
         return PrimitiveType(TokenType.VOID)
 
     def analyze_program(self, node: Program) -> VoidType:
-        """ Starts semantic analysis from the root Program node.
+        """Starts semantic analysis from the root Program node.
 
         Args:
             node (Program): The Program node to analyse.

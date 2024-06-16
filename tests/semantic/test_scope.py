@@ -1,8 +1,9 @@
 import pytest
-from lexer.lexer import Lexer
-from parser.parser import Parser
-from semantic.analyzer import SemanticAnalyzer
-from syntax.ast import *
+from frontend.lexer.lexer import Lexer
+from frontend.parser.parser import Parser
+from frontend.semantic.analyzer import SemanticAnalyzer
+from frontend.syntax.ast import *
+
 
 def parse_code(code: str) -> Program:
     lexer = Lexer(code)
@@ -10,10 +11,12 @@ def parse_code(code: str) -> Program:
     parser = Parser(tokens)
     return parser.parse()
 
+
 def analyze_code(code: str):
     ast = parse_code(code)
     analyzer = SemanticAnalyzer()
     analyzer.analyze(ast)
+
 
 def test_undeclared_error():
     code = """
@@ -23,6 +26,7 @@ def test_undeclared_error():
     with pytest.raises(NameError, match=r'Variable "y" not declared'):
         analyze_code(code)
 
+
 def test_redeclaration_error():
     code = """
         int x = 5;
@@ -30,6 +34,7 @@ def test_redeclaration_error():
     """
     with pytest.raises(NameError, match=r'Cannot redeclare variable "x"'):
         analyze_code(code)
+
 
 def test_nested_redeclaration_error():
     code = """
@@ -41,6 +46,7 @@ def test_nested_redeclaration_error():
     with pytest.raises(NameError, match=r'Cannot shadow existing variable "x"'):
         analyze_code(code)
 
+
 def test_scope_error():
     code = """
         int x = 5;
@@ -51,6 +57,7 @@ def test_scope_error():
     """
     with pytest.raises(NameError, match=r'Variable "y" not declared'):
         analyze_code(code)
+
 
 def test_function_variable_assignment_scope_error():
     code = """
@@ -64,6 +71,7 @@ def test_function_variable_assignment_scope_error():
     with pytest.raises(NameError, match=r'Variable "x" not declared'):
         analyze_code(code)
 
+
 def test_non_local_function_variable_access():
     code = """
         int x = 10;
@@ -76,6 +84,7 @@ def test_non_local_function_variable_access():
     with pytest.raises(NameError, match=r'Variable "x" not declared'):
         analyze_code(code)
 
+
 def test_function_index_assignment_scope_error():
     code = """
         int[] arr = [1, 2, 3];
@@ -87,6 +96,7 @@ def test_function_index_assignment_scope_error():
 
     with pytest.raises(NameError, match=r'Variable "arr" not declared'):
         analyze_code(code)
+
 
 def test_nested_blocks_and_scopes():
     code = """
@@ -103,6 +113,7 @@ def test_nested_blocks_and_scopes():
     """
     analyze_code(code)
 
+
 def test_if_else():
     code = """
         int x = 5;
@@ -114,6 +125,7 @@ def test_if_else():
     """
     analyze_code(code)
 
+
 def test_while_loop():
     code = """
         int x = 0;
@@ -123,6 +135,7 @@ def test_while_loop():
     """
     analyze_code(code)
 
+
 def test_each_statement():
     code = """
         each x in [1, 2, 3] {
@@ -131,6 +144,7 @@ def test_each_statement():
     """
     analyze_code(code)
 
+
 def test_range_statement():
     code = """
         range x in 0 to 10 by 1 {
@@ -138,6 +152,7 @@ def test_range_statement():
         }
     """
     analyze_code(code)
+
 
 def test_halt_statement():
     code = """
@@ -152,6 +167,7 @@ def test_halt_statement():
     """
     analyze_code(code)
 
+
 def test_invalid_skip_statement():
     code = """
         if true {
@@ -159,8 +175,11 @@ def test_invalid_skip_statement():
         }
     """
 
-    with pytest.raises(SyntaxError, match=r'Skip statement is not valid outside of a loop block'):
+    with pytest.raises(
+        SyntaxError, match=r"Skip statement is not valid outside of a loop block"
+    ):
         analyze_code(code)
+
 
 def test_block_scope():
     code = """
@@ -174,6 +193,7 @@ def test_block_scope():
     """
     with pytest.raises(NameError, match=r'Variable "y" not declared'):
         analyze_code(code)
+
 
 def test_nested_scopes():
     code = """
@@ -193,6 +213,7 @@ def test_nested_scopes():
     """
     analyze_code(code)
 
+
 def test_variable_lifetime():
     code = """
         int x = 5;
@@ -205,6 +226,7 @@ def test_variable_lifetime():
     with pytest.raises(NameError, match=r'Variable "y" not declared'):
         analyze_code(code)
 
+
 def test_return_statement_reachability():
     code = """
         func foo -> void = [] >> {
@@ -212,8 +234,9 @@ def test_return_statement_reachability():
             echo "This should be unreachable";  // Unreachable code
         }
     """
-    with pytest.raises(SyntaxError, match=r'Unreachable code detected'):
+    with pytest.raises(SyntaxError, match=r"Unreachable code detected"):
         analyze_code(code)
+
 
 def test_halt_statement_reachability():
     code = """
@@ -222,8 +245,9 @@ def test_halt_statement_reachability():
             echo "This should be unreachable";  // Unreachable code
         }
     """
-    with pytest.raises(SyntaxError, match=r'Unreachable code detected'):
+    with pytest.raises(SyntaxError, match=r"Unreachable code detected"):
         analyze_code(code)
+
 
 def test_skip_statement_reachability():
     code = """
@@ -232,8 +256,9 @@ def test_skip_statement_reachability():
             echo "This should be unreachable";  // Unreachable code
         }
     """
-    with pytest.raises(SyntaxError, match=r'Unreachable code detected'):
+    with pytest.raises(SyntaxError, match=r"Unreachable code detected"):
         analyze_code(code)
+
 
 def test_valid_control_flow_statement_use():
     code = """
@@ -254,6 +279,7 @@ def test_valid_control_flow_statement_use():
     """
     analyze_code(code)
 
+
 def test_nested_if_else_reachability():
     code = """
         func foo -> void = [] >> {
@@ -272,8 +298,9 @@ def test_nested_if_else_reachability():
             echo "This should be unreachable";  // Unreachable code
         }
     """
-    with pytest.raises(SyntaxError, match=r'Unreachable code detected'):
+    with pytest.raises(SyntaxError, match=r"Unreachable code detected"):
         analyze_code(code)
+
 
 def test_unreachable_if_block():
     code = """
@@ -285,8 +312,9 @@ def test_unreachable_if_block():
             }
         }
     """
-    with pytest.raises(SyntaxError, match=r'Unreachable if block detected'):
+    with pytest.raises(SyntaxError, match=r"Unreachable if block detected"):
         analyze_code(code)
+
 
 def test_unreachable_else_block():
     code = """
@@ -298,5 +326,5 @@ def test_unreachable_else_block():
             }
         }
     """
-    with pytest.raises(SyntaxError, match=r'Unreachable else block detected'):
+    with pytest.raises(SyntaxError, match=r"Unreachable else block detected"):
         analyze_code(code)

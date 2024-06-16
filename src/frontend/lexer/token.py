@@ -1,4 +1,5 @@
-from lexer.tokens import TokenType  # Import the TokenType enumeration from lexer.tokens module
+from frontend.lexer.tokens import TokenType
+
 
 class Token:
     """
@@ -10,11 +11,14 @@ class Token:
         line (int): The line number where the token is located in the source code.
         column (int): The column number where the token starts in the source code.
     """
-    def __init__(self, type: TokenType, value: str, line: int, column: int) -> None:
-        self.type: TokenType = type
+
+    def __init__(
+        self, token_type: TokenType, value: str, line: int, column: int
+    ) -> None:
+        self.token_type: TokenType = token_type
         self.value: str = value
         self.line: int = line
         self.column: int = column
 
     def __repr__(self) -> str:
-        return f'Token({self.type}, {self.value}, {self.line}, {self.column})'
+        return f"Token({self.token_type}, {self.value}, {self.line}, {self.column})"

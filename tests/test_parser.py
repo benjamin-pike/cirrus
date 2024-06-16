@@ -1,8 +1,9 @@
-from lexer.lexer import Lexer
-from lexer.tokens import TokenType
-from parser.parser import Parser
-from semantic.types import ArrayType, PrimitiveType
-from syntax.ast import *
+from frontend.lexer.lexer import Lexer
+from frontend.lexer.tokens import TokenType
+from frontend.parser.parser import Parser
+from frontend.semantic.types import ArrayType, PrimitiveType
+from frontend.syntax.ast import *
+
 
 def parse_code(code: str) -> Program:
     lexer = Lexer(code)
@@ -10,40 +11,58 @@ def parse_code(code: str) -> Program:
     parser = Parser(tokens)
     return parser.parse()
 
+
 def check(code: str, expected: Program):
     program = parse_code(code)
     assert repr(program) == repr(expected)
 
+
 def test_variable_declaration():
     code = "int x = 5;"
-    expected = Program([
-        VariableDeclaration("x", PrimitiveType(TokenType.INT), NumericLiteral(5))
-    ])
+    expected = Program(
+        [VariableDeclaration("x", PrimitiveType(TokenType.INT), NumericLiteral(5))]
+    )
     check(code, expected)
+
 
 def test_expression_statement():
     code = "x + 10;"
-    expected = Program([
-        ExpressionStatement(BinaryExpression(Identifier("x"), TokenType.PLUS, NumericLiteral(10)))
-    ])
+    expected = Program(
+        [
+            ExpressionStatement(
+                BinaryExpression(Identifier("x"), TokenType.PLUS, NumericLiteral(10))
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_block_statement():
     code = "{ float y = 1.5; y - 1; }"
-    expected = Program([
-        BlockStatement([
-            VariableDeclaration("y", PrimitiveType(TokenType.FLOAT), NumericLiteral(1.5)),
-            ExpressionStatement(BinaryExpression(Identifier("y"), TokenType.MINUS, NumericLiteral(1)))
-        ])
-    ])
+    expected = Program(
+        [
+            BlockStatement(
+                [
+                    VariableDeclaration(
+                        "y", PrimitiveType(TokenType.FLOAT), NumericLiteral(1.5)
+                    ),
+                    ExpressionStatement(
+                        BinaryExpression(
+                            Identifier("y"), TokenType.MINUS, NumericLiteral(1)
+                        )
+                    ),
+                ]
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_echo_statement():
     code = "echo 'hello world';"
-    expected = Program([
-        EchoStatement(StringLiteral("hello world"))
-    ])
+    expected = Program([EchoStatement(StringLiteral("hello world"))])
     check(code, expected)
+
 
 def test_if_statement():
     code = """
@@ -53,14 +72,17 @@ def test_if_statement():
             return 5;
         }
     """
-    expected = Program([
-        IfStatement(
-            BinaryExpression(Identifier("x"), TokenType.GT, NumericLiteral(5)),
-            BlockStatement([ReturnStatement(Identifier("x"))]),
-            BlockStatement([ReturnStatement(NumericLiteral(5))])
-        )
-    ])
+    expected = Program(
+        [
+            IfStatement(
+                BinaryExpression(Identifier("x"), TokenType.GT, NumericLiteral(5)),
+                BlockStatement([ReturnStatement(Identifier("x"))]),
+                BlockStatement([ReturnStatement(NumericLiteral(5))]),
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_nested_if_else():
     code = """
@@ -75,21 +97,28 @@ def test_nested_if_else():
             return 5;
         }
     """
-    expected = Program([
-        VariableDeclaration("is_true", PrimitiveType(TokenType.BOOL), BooleanLiteral(True)),
-        IfStatement(
-            BinaryExpression(Identifier("x"), TokenType.GT, NumericLiteral(5)),
-            BlockStatement([
-                IfStatement(
-                    Identifier("is_true"),
-                    BlockStatement([ReturnStatement(Identifier("y"))]),
-                    BlockStatement([ReturnStatement(Identifier("x"))])
-                )
-            ]),
-            BlockStatement([ReturnStatement(NumericLiteral(5))])
-        )
-    ])
+    expected = Program(
+        [
+            VariableDeclaration(
+                "is_true", PrimitiveType(TokenType.BOOL), BooleanLiteral(True)
+            ),
+            IfStatement(
+                BinaryExpression(Identifier("x"), TokenType.GT, NumericLiteral(5)),
+                BlockStatement(
+                    [
+                        IfStatement(
+                            Identifier("is_true"),
+                            BlockStatement([ReturnStatement(Identifier("y"))]),
+                            BlockStatement([ReturnStatement(Identifier("x"))]),
+                        )
+                    ]
+                ),
+                BlockStatement([ReturnStatement(NumericLiteral(5))]),
+            ),
+        ]
+    )
     check(code, expected)
+
 
 def test_unary_expressions():
     code = """
@@ -97,12 +126,21 @@ def test_unary_expressions():
         --y;
         !z;
     """
-    expected = Program([
-        ExpressionStatement(UnaryExpression(TokenType.INCREMENT, Identifier("x"), 'POST')),
-        ExpressionStatement(UnaryExpression(TokenType.DECREMENT, Identifier("y"), 'PRE')),
-        ExpressionStatement(UnaryExpression(TokenType.LOGICAL_NOT, Identifier("z"), 'PRE'))
-    ])
+    expected = Program(
+        [
+            ExpressionStatement(
+                UnaryExpression(TokenType.INCREMENT, Identifier("x"), "POST")
+            ),
+            ExpressionStatement(
+                UnaryExpression(TokenType.DECREMENT, Identifier("y"), "PRE")
+            ),
+            ExpressionStatement(
+                UnaryExpression(TokenType.LOGICAL_NOT, Identifier("z"), "PRE")
+            ),
+        ]
+    )
     check(code, expected)
+
 
 def test_complex_unary_expressions():
     code = """
@@ -111,58 +149,75 @@ def test_complex_unary_expressions():
         bool z = !c();
     """
 
-    excepted = Program([
-        VariableDeclaration(
-            "x",
-            PrimitiveType(TokenType.INT),
-            UnaryExpression(TokenType.INCREMENT, IndexExpression(Identifier("a"), NumericLiteral(1)),'POST')
-        ),
-        VariableDeclaration(
-            "y",
-            PrimitiveType(TokenType.INT),
-            UnaryExpression(TokenType.DECREMENT, CallExpression(Identifier("b"), []),'PRE')
-        ),
-        VariableDeclaration(
-            "z",
-            PrimitiveType(TokenType.BOOL),
-            UnaryExpression(TokenType.LOGICAL_NOT, CallExpression(Identifier("c"), []),'PRE')
-        )
-    ])
+    excepted = Program(
+        [
+            VariableDeclaration(
+                "x",
+                PrimitiveType(TokenType.INT),
+                UnaryExpression(
+                    TokenType.INCREMENT,
+                    IndexExpression(Identifier("a"), NumericLiteral(1)),
+                    "POST",
+                ),
+            ),
+            VariableDeclaration(
+                "y",
+                PrimitiveType(TokenType.INT),
+                UnaryExpression(
+                    TokenType.DECREMENT, CallExpression(Identifier("b"), []), "PRE"
+                ),
+            ),
+            VariableDeclaration(
+                "z",
+                PrimitiveType(TokenType.BOOL),
+                UnaryExpression(
+                    TokenType.LOGICAL_NOT, CallExpression(Identifier("c"), []), "PRE"
+                ),
+            ),
+        ]
+    )
     check(code, excepted)
+
 
 def test_logical_unary_expression():
     code = """ !x; """
-    expected = Program([
-        ExpressionStatement(UnaryExpression(TokenType.LOGICAL_NOT, Identifier("x"), 'PRE'))
-    ])
+    expected = Program(
+        [
+            ExpressionStatement(
+                UnaryExpression(TokenType.LOGICAL_NOT, Identifier("x"), "PRE")
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_array_literal():
     code = "int[] arr = [1, 2, 3];"
-    expected = Program([
-        VariableDeclaration("arr",
-            ArrayType(PrimitiveType(TokenType.INT)),
-            ArrayLiteral([
-                NumericLiteral(1),
-                NumericLiteral(2),
-                NumericLiteral(3)
-            ])
-        )
-    ])
+    expected = Program(
+        [
+            VariableDeclaration(
+                "arr",
+                ArrayType(PrimitiveType(TokenType.INT)),
+                ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_array_indexing():
     code = "int[] x = arr[0];"
-    expected = Program([
-        VariableDeclaration("x",
-            ArrayType(PrimitiveType(TokenType.INT)),
-            IndexExpression(
-                Identifier("arr"),
-                NumericLiteral(0)
+    expected = Program(
+        [
+            VariableDeclaration(
+                "x",
+                ArrayType(PrimitiveType(TokenType.INT)),
+                IndexExpression(Identifier("arr"), NumericLiteral(0)),
             )
-        )
-    ])
+        ]
+    )
     check(code, expected)
+
 
 def test_combined_array_example():
     code = """
@@ -170,31 +225,28 @@ def test_combined_array_example():
         int x = arr[1];
         arr[2] = 5;
     """
-    expected = Program([
-        VariableDeclaration("arr",
-            ArrayType(PrimitiveType(TokenType.INT)),
-            ArrayLiteral([
-                NumericLiteral(1),
-                NumericLiteral(2),
-                NumericLiteral(3)
-            ])
-        ),
-        VariableDeclaration("x",
-            PrimitiveType(TokenType.INT),
-            IndexExpression(
-                Identifier("arr"),
-                NumericLiteral(1)
-            )
-        ),
-        ExpressionStatement(AssignmentExpression(
-            IndexExpression(
-                Identifier("arr"),
-                NumericLiteral(2)
+    expected = Program(
+        [
+            VariableDeclaration(
+                "arr",
+                ArrayType(PrimitiveType(TokenType.INT)),
+                ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
             ),
-            NumericLiteral(5)
-        ))
-    ])
+            VariableDeclaration(
+                "x",
+                PrimitiveType(TokenType.INT),
+                IndexExpression(Identifier("arr"), NumericLiteral(1)),
+            ),
+            ExpressionStatement(
+                AssignmentExpression(
+                    IndexExpression(Identifier("arr"), NumericLiteral(2)),
+                    NumericLiteral(5),
+                )
+            ),
+        ]
+    )
     check(code, expected)
+
 
 def test_while_statement():
     code = """
@@ -202,17 +254,24 @@ def test_while_statement():
             x++;
         }
     """
-    expected = Program([
-        WhileStatement(
-            BinaryExpression(Identifier("x"), TokenType.LT, NumericLiteral(10)),
-            BlockStatement([
-                ExpressionStatement(
-                    UnaryExpression(TokenType.INCREMENT, Identifier("x"), 'POST')
-                )
-            ])
-        )
-    ])
+    expected = Program(
+        [
+            WhileStatement(
+                BinaryExpression(Identifier("x"), TokenType.LT, NumericLiteral(10)),
+                BlockStatement(
+                    [
+                        ExpressionStatement(
+                            UnaryExpression(
+                                TokenType.INCREMENT, Identifier("x"), "POST"
+                            )
+                        )
+                    ]
+                ),
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_each_statement():
     code = """
@@ -221,14 +280,17 @@ def test_each_statement():
         }
     """
 
-    expected = Program([
-        EachStatement(
-            "x",
-            ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
-            BlockStatement([ReturnStatement(Identifier("x"))])
-        )
-    ])
+    expected = Program(
+        [
+            EachStatement(
+                "x",
+                ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
+                BlockStatement([ReturnStatement(Identifier("x"))]),
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_range_statement():
     code = """
@@ -236,16 +298,19 @@ def test_range_statement():
             return x;
         }
     """
-    expected = Program([
-        RangeStatement(
-            "x",
-            NumericLiteral(0),
-            NumericLiteral(10),
-            NumericLiteral(1),
-            BlockStatement([ReturnStatement(Identifier("x"))])
-        )
-    ])
+    expected = Program(
+        [
+            RangeStatement(
+                "x",
+                NumericLiteral(0),
+                NumericLiteral(10),
+                NumericLiteral(1),
+                BlockStatement([ReturnStatement(Identifier("x"))]),
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_halt_statement():
     code = """
@@ -255,22 +320,29 @@ def test_halt_statement():
             }
         }
     """
-    expected = Program([
-        RangeStatement(
-            "x",
-            NumericLiteral(0),
-            NumericLiteral(10),
-            NumericLiteral(1),
-            BlockStatement([
-                IfStatement(
-                    BinaryExpression(Identifier("x"), TokenType.EQUAL, NumericLiteral(5)),
-                    BlockStatement([HaltStatement()]),
-                    None
-                )
-            ])
-        )
-    ])
+    expected = Program(
+        [
+            RangeStatement(
+                "x",
+                NumericLiteral(0),
+                NumericLiteral(10),
+                NumericLiteral(1),
+                BlockStatement(
+                    [
+                        IfStatement(
+                            BinaryExpression(
+                                Identifier("x"), TokenType.EQUAL, NumericLiteral(5)
+                            ),
+                            BlockStatement([HaltStatement()]),
+                            None,
+                        )
+                    ]
+                ),
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_skip_statement():
     code = """
@@ -281,20 +353,32 @@ def test_skip_statement():
         }
     """
 
-    expected = Program([
-        EachStatement(
-            "x",
-            ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3), NumericLiteral(4)]),
-            BlockStatement([
-                IfStatement(
-                    CallExpression(Identifier("isEven"), [Identifier("x")]),
-                    BlockStatement([SkipStatement()]),
-                    None
-                )
-            ])
-        )
-    ])
+    expected = Program(
+        [
+            EachStatement(
+                "x",
+                ArrayLiteral(
+                    [
+                        NumericLiteral(1),
+                        NumericLiteral(2),
+                        NumericLiteral(3),
+                        NumericLiteral(4),
+                    ]
+                ),
+                BlockStatement(
+                    [
+                        IfStatement(
+                            CallExpression(Identifier("isEven"), [Identifier("x")]),
+                            BlockStatement([SkipStatement()]),
+                            None,
+                        )
+                    ]
+                ),
+            )
+        ]
+    )
     check(code, expected)
+
 
 def test_function_declaration():
     code = """
@@ -302,24 +386,31 @@ def test_function_declaration():
             return a + b;
         }
     """
-    expected = Program([
-        FunctionDeclaration(
-            "add",
-            FunctionType(
-                PrimitiveType(TokenType.INT),
-                [
-                    ('a', PrimitiveType(TokenType.INT)),
-                    ('b', PrimitiveType(TokenType.INT))
-                ]
-            ),
-            BlockStatement(
-                [
-                    ReturnStatement(BinaryExpression(Identifier("a"), TokenType.PLUS, Identifier("b")))
-                ]
+    expected = Program(
+        [
+            FunctionDeclaration(
+                "add",
+                FunctionType(
+                    PrimitiveType(TokenType.INT),
+                    [
+                        ("a", PrimitiveType(TokenType.INT)),
+                        ("b", PrimitiveType(TokenType.INT)),
+                    ],
+                ),
+                BlockStatement(
+                    [
+                        ReturnStatement(
+                            BinaryExpression(
+                                Identifier("a"), TokenType.PLUS, Identifier("b")
+                            )
+                        )
+                    ]
+                ),
             )
-        )
-    ])
+        ]
+    )
     check(code, expected)
+
 
 def test_combined_function_example():
     code = """
@@ -334,30 +425,64 @@ def test_combined_function_example():
             z = z - 1;
         }
     """
-    expected = Program([
-        VariableDeclaration("z", PrimitiveType(TokenType.INT), NumericLiteral(15)),
-        FunctionDeclaration(
-            'multiply',
-            FunctionType(
-                PrimitiveType(TokenType.INT),
-                [
-                    ('x', PrimitiveType(TokenType.INT)),
-                    ('y', PrimitiveType(TokenType.INT))
-                ],
+    expected = Program(
+        [
+            VariableDeclaration("z", PrimitiveType(TokenType.INT), NumericLiteral(15)),
+            FunctionDeclaration(
+                "multiply",
+                FunctionType(
+                    PrimitiveType(TokenType.INT),
+                    [
+                        ("x", PrimitiveType(TokenType.INT)),
+                        ("y", PrimitiveType(TokenType.INT)),
+                    ],
+                ),
+                BlockStatement(
+                    [
+                        ReturnStatement(
+                            BinaryExpression(
+                                Identifier("x"), TokenType.MULTIPLY, Identifier("y")
+                            )
+                        )
+                    ]
+                ),
             ),
-            BlockStatement([ReturnStatement(BinaryExpression(Identifier("x"), TokenType.MULTIPLY, Identifier("y")))])
-        ),
-        IfStatement(
-            BinaryExpression(Identifier("z"), TokenType.GT, NumericLiteral(10)),
-            BlockStatement([ExpressionStatement(AssignmentExpression(Identifier("z"),  CallExpression(Identifier("multiply"), [Identifier("z"), NumericLiteral(2)])))]),
-            None
-        ),
-        WhileStatement(
-            BinaryExpression(Identifier("z"), TokenType.GT, NumericLiteral(0)),
-            BlockStatement([ExpressionStatement(AssignmentExpression(Identifier("z"), BinaryExpression(Identifier("z"), TokenType.MINUS, NumericLiteral(1))))])
-        )
-    ])
+            IfStatement(
+                BinaryExpression(Identifier("z"), TokenType.GT, NumericLiteral(10)),
+                BlockStatement(
+                    [
+                        ExpressionStatement(
+                            AssignmentExpression(
+                                Identifier("z"),
+                                CallExpression(
+                                    Identifier("multiply"),
+                                    [Identifier("z"), NumericLiteral(2)],
+                                ),
+                            )
+                        )
+                    ]
+                ),
+                None,
+            ),
+            WhileStatement(
+                BinaryExpression(Identifier("z"), TokenType.GT, NumericLiteral(0)),
+                BlockStatement(
+                    [
+                        ExpressionStatement(
+                            AssignmentExpression(
+                                Identifier("z"),
+                                BinaryExpression(
+                                    Identifier("z"), TokenType.MINUS, NumericLiteral(1)
+                                ),
+                            )
+                        )
+                    ]
+                ),
+            ),
+        ]
+    )
     check(code, expected)
+
 
 def test_arg_function_type():
     code = """
@@ -374,105 +499,136 @@ def test_arg_function_type():
         }
     """
 
-    excepted = Program([
-        FunctionDeclaration(
-            "add",
-            FunctionType(
-                PrimitiveType(TokenType.INT),
-                [
-                    ('a', PrimitiveType(TokenType.INT)),
-                    ('b', PrimitiveType(TokenType.INT))
-                ]
+    excepted = Program(
+        [
+            FunctionDeclaration(
+                "add",
+                FunctionType(
+                    PrimitiveType(TokenType.INT),
+                    [
+                        ("a", PrimitiveType(TokenType.INT)),
+                        ("b", PrimitiveType(TokenType.INT)),
+                    ],
+                ),
+                BlockStatement(
+                    [
+                        ReturnStatement(
+                            BinaryExpression(
+                                Identifier("a"), TokenType.PLUS, Identifier("b")
+                            )
+                        )
+                    ]
+                ),
             ),
-            BlockStatement(
-                [
-                    ReturnStatement(BinaryExpression(Identifier("a"), TokenType.PLUS, Identifier("b")))
-                ]
-            )
-        ),
-
-        FunctionDeclaration(
-            "reduce",
-            FunctionType(
-                PrimitiveType(TokenType.INT),
-                [
-                    ('arr', ArrayType(PrimitiveType(TokenType.INT))),
-                    ('fn', FunctionType(PrimitiveType(TokenType.INT), [('a', PrimitiveType(TokenType.INT)), ('b', PrimitiveType(TokenType.INT))]))
-                ]
-            ),
-            BlockStatement(
-                [
-                    VariableDeclaration("result", PrimitiveType(TokenType.INT), NumericLiteral(0)),
-                    EachStatement(
-                        "x",
-                        Identifier("arr"),
-                        BlockStatement(
-                            [
-                                ExpressionStatement(
-                                    AssignmentExpression(
-                                        Identifier("result"),
-                                        CallExpression(
-                                            Identifier("fn"),
-                                            [Identifier("result"), Identifier("x")]
+            FunctionDeclaration(
+                "reduce",
+                FunctionType(
+                    PrimitiveType(TokenType.INT),
+                    [
+                        ("arr", ArrayType(PrimitiveType(TokenType.INT))),
+                        (
+                            "fn",
+                            FunctionType(
+                                PrimitiveType(TokenType.INT),
+                                [
+                                    ("a", PrimitiveType(TokenType.INT)),
+                                    ("b", PrimitiveType(TokenType.INT)),
+                                ],
+                            ),
+                        ),
+                    ],
+                ),
+                BlockStatement(
+                    [
+                        VariableDeclaration(
+                            "result", PrimitiveType(TokenType.INT), NumericLiteral(0)
+                        ),
+                        EachStatement(
+                            "x",
+                            Identifier("arr"),
+                            BlockStatement(
+                                [
+                                    ExpressionStatement(
+                                        AssignmentExpression(
+                                            Identifier("result"),
+                                            CallExpression(
+                                                Identifier("fn"),
+                                                [Identifier("result"), Identifier("x")],
+                                            ),
                                         )
                                     )
-                                )
-                            ]
-                        )
-                    ),
-                    ReturnStatement(Identifier("result"))
-                ]
-            )
-        )
-    ])
+                                ]
+                            ),
+                        ),
+                        ReturnStatement(Identifier("result")),
+                    ]
+                ),
+            ),
+        ]
+    )
 
     check(code, excepted)
+
 
 def test_pipe_expression_single():
     code = """
         [[1, 2, 3]] >> map(triple);
     """
-    expected = Program([
-        ExpressionStatement(
-            CallExpression(
-                Identifier("map"),
-                [
-                    ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
-                    Identifier("triple")
-                ]
+    expected = Program(
+        [
+            ExpressionStatement(
+                CallExpression(
+                    Identifier("map"),
+                    [
+                        ArrayLiteral(
+                            [NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]
+                        ),
+                        Identifier("triple"),
+                    ],
+                )
             )
-        )
-    ])
+        ]
+    )
     check(code, expected)
+
 
 def test_pipe_expression_multiple():
     code = """
         [[1, 2, 3]] >> map(triple) >> filter(isEven) >> reduce(add);
     """
-    expected = Program([
-        ExpressionStatement(
-            CallExpression(
-                Identifier("reduce"),
-                [
-                    CallExpression(
-                        Identifier("filter"),
-                        [
-                            CallExpression(
-                                Identifier("map"),
-                                [
-                                    ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
-                                    Identifier("triple")
-                                ]
-                            ),
-                            Identifier("isEven")
-                        ]
-                    ),
-                    Identifier("add")
-                ]
+    expected = Program(
+        [
+            ExpressionStatement(
+                CallExpression(
+                    Identifier("reduce"),
+                    [
+                        CallExpression(
+                            Identifier("filter"),
+                            [
+                                CallExpression(
+                                    Identifier("map"),
+                                    [
+                                        ArrayLiteral(
+                                            [
+                                                NumericLiteral(1),
+                                                NumericLiteral(2),
+                                                NumericLiteral(3),
+                                            ]
+                                        ),
+                                        Identifier("triple"),
+                                    ],
+                                ),
+                                Identifier("isEven"),
+                            ],
+                        ),
+                        Identifier("add"),
+                    ],
+                )
             )
-        )
-    ])
+        ]
+    )
     check(code, expected)
+
 
 def test_complex_pipe_expression():
     code = """
@@ -481,30 +637,39 @@ def test_complex_pipe_expression():
             >> map(triple)
             >> sum;
     """
-    expected = Program([
-        VariableDeclaration("x", ArrayType(PrimitiveType(TokenType.INT)),
-            CallExpression(
-                Identifier("sum"),
-                [
-                    CallExpression(
-                        Identifier("map"),
-                        [
-                            CallExpression(
-                                Identifier("reduce"),
-                                [
-                                    ArrayLiteral([NumericLiteral(1), NumericLiteral(2)]),
-                                    ArrayLiteral([NumericLiteral(3), NumericLiteral(4)]),
-                                    Identifier("add")
-                                ]
-                            ),
-                            Identifier("triple")
-                        ]
-                    )
-                ]
+    expected = Program(
+        [
+            VariableDeclaration(
+                "x",
+                ArrayType(PrimitiveType(TokenType.INT)),
+                CallExpression(
+                    Identifier("sum"),
+                    [
+                        CallExpression(
+                            Identifier("map"),
+                            [
+                                CallExpression(
+                                    Identifier("reduce"),
+                                    [
+                                        ArrayLiteral(
+                                            [NumericLiteral(1), NumericLiteral(2)]
+                                        ),
+                                        ArrayLiteral(
+                                            [NumericLiteral(3), NumericLiteral(4)]
+                                        ),
+                                        Identifier("add"),
+                                    ],
+                                ),
+                                Identifier("triple"),
+                            ],
+                        )
+                    ],
+                ),
             )
-        )
-    ])
+        ]
+    )
     check(code, expected)
+
 
 def test_comments():
     code = """
@@ -515,8 +680,10 @@ def test_comments():
         /* This is a
         multi-line comment */
     """
-    expected = Program([
-        VariableDeclaration("x", PrimitiveType(TokenType.INT), NumericLiteral(5)),
-        EchoStatement(StringLiteral("This should be included"))
-    ])
+    expected = Program(
+        [
+            VariableDeclaration("x", PrimitiveType(TokenType.INT), NumericLiteral(5)),
+            EchoStatement(StringLiteral("This should be included")),
+        ]
+    )
     check(code, expected)
