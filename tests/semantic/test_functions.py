@@ -1,8 +1,9 @@
 import pytest
-from lexer.lexer import Lexer
-from parser.parser import Parser
-from semantic.analyzer import SemanticAnalyzer
-from syntax.ast import *
+from frontend.lexer.lexer import Lexer
+from frontend.parser.parser import Parser
+from frontend.semantic.analyzer import SemanticAnalyzer
+from frontend.syntax.ast import *
+
 
 def parse_code(code: str) -> Program:
     lexer = Lexer(code)
@@ -10,10 +11,12 @@ def parse_code(code: str) -> Program:
     parser = Parser(tokens)
     return parser.parse()
 
+
 def analyze_code(code: str):
     ast = parse_code(code)
     analyzer = SemanticAnalyzer()
     analyzer.analyze(ast)
+
 
 def test_valid_program():
     code = """
@@ -25,6 +28,7 @@ def test_valid_program():
     """
     analyze_code(code)
 
+
 def test_function_declaration_and_call():
     code = """
         func multiply -> int = [int x, int y] >> {
@@ -33,6 +37,7 @@ def test_function_declaration_and_call():
         int result = multiply(4, 5);
     """
     analyze_code(code)
+
 
 def test_function_redeclaration_error():
     code = """
@@ -46,6 +51,7 @@ def test_function_redeclaration_error():
     with pytest.raises(NameError, match=r'Cannot redeclare function "add"'):
         analyze_code(code)
 
+
 def test_invalid_function_call():
     code = """
         func add -> int = [int a, int b] >> {
@@ -53,8 +59,9 @@ def test_invalid_function_call():
         }
         add(5);  // Missing argument
     """
-    with pytest.raises(TypeError, match=r'Function add expects 2 arguments, got 1'):
+    with pytest.raises(TypeError, match=r"Function add expects 2 arguments, got 1"):
         analyze_code(code)
+
 
 def test_invalid_return_usage():
     code = """
@@ -62,8 +69,11 @@ def test_invalid_return_usage():
             return 5; // Return statement should only be valid inside a function
         }
     """
-    with pytest.raises(SyntaxError, match=r'Return statement is not valid outside of a function block'):
+    with pytest.raises(
+        SyntaxError, match=r"Return statement is not valid outside of a function block"
+    ):
         analyze_code(code)
+
 
 def test_complex_function():
     code = """
@@ -79,6 +89,7 @@ def test_complex_function():
         }
     """
     analyze_code(code)
+
 
 def test_pipe_expression():
     code = """
@@ -120,8 +131,9 @@ def test_pipe_expression():
 
         int x = [[1, 2, 3, 4]] >> reduce(add) >> triple >> add;  // Type mismatch
     """
-    with pytest.raises(TypeError, match=r'Function add expects 2 arguments, got 1'):
+    with pytest.raises(TypeError, match=r"Function add expects 2 arguments, got 1"):
         analyze_code(code)
+
 
 def test_function_parameter_types():
     code = """
@@ -130,8 +142,12 @@ def test_function_parameter_types():
         }
         add(1, "2");  // Type mismatch in function parameters
     """
-    with pytest.raises(TypeError, match=r'Argument type PrimitiveType\(TokenType.STRING\) does not match parameter type PrimitiveType\(TokenType.INT\)'):
+    with pytest.raises(
+        TypeError,
+        match=r"Argument type PrimitiveType\(TokenType.STRING\) does not match parameter type PrimitiveType\(TokenType.INT\)",
+    ):
         analyze_code(code)
+
 
 def test_function_return_type():
     code = """
@@ -141,6 +157,7 @@ def test_function_return_type():
         string message = greet("World");
     """
     analyze_code(code)
+
 
 def test_recursive_function():
     code = """
@@ -155,6 +172,7 @@ def test_recursive_function():
     """
     analyze_code(code)
 
+
 def test_function_with_array_parameter():
     code = """
         func sum -> int = [int[] arr] >> {
@@ -168,6 +186,7 @@ def test_function_with_array_parameter():
         int total = sum(numbers);
     """
     analyze_code(code)
+
 
 def test_function_with_nested_call():
     code = """

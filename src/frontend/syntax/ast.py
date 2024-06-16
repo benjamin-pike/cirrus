@@ -1,21 +1,48 @@
-from typing import *
-from lexer.tokens import TokenType
-from semantic.types import FunctionType, VarType
+from typing import List, Optional, Union, Literal
+from abc import ABC
+from frontend.lexer.tokens import TokenType
+from frontend.semantic.types import FunctionType, VarType
 
-class Node(): ...
-class Statement(Node): ...
-class Expression(Node): ...
+
+class Node(ABC):
+    """Protocol representing a node in the AST."""
+
+    def __init__(self) -> None:
+        pass
+
+
+class Statement(Node):
+    """Protocol representing a statement node in the AST."""
+
+    def __init__(self) -> None:
+        pass
+
+
+class Expression(Node):
+    """Protocol representing an expression node in the AST."""
+
+    def __init__(self) -> None:
+        pass
+
 
 # Program
 class Program(Node):
+    """Node representing a program.
+
+    Args:
+        body (List[Statement]): The statements within the program.
+    """
+
     def __init__(self, body: List[Statement]) -> None:
         self.body: List[Statement] = body
+
     def __repr__(self) -> str:
-        return f'Program({self.body})'
+        return f"Program({self.body})"
+
 
 # Statements
 class VariableDeclaration(Statement):
-    """ Node representing a variable declaration statement.
+    """Node representing a variable declaration statement.
 
     Syntax:
         let <variable_name> = <initializer>;
@@ -23,15 +50,18 @@ class VariableDeclaration(Statement):
     Example:
         let x = 5;
     """
+
     def __init__(self, name: str, var_type: VarType, initializer: Node) -> None:
         self.name = name
         self.var_type = var_type
         self.initializer = initializer
+
     def __repr__(self) -> str:
-        return f'VariableDeclaration({self.name}, {self.var_type}, {self.initializer})'
+        return f"VariableDeclaration({self.name}, {self.var_type}, {self.initializer})"
+
 
 class ExpressionStatement(Statement):
-    """ Node representing an expression statement.
+    """Node representing an expression statement.
 
     Args:
         expression (Node): The expression to be evaluated.
@@ -42,13 +72,16 @@ class ExpressionStatement(Statement):
     Example:
         5 + 5;
     """
+
     def __init__(self, expression: Node) -> None:
         self.expression = expression
+
     def __repr__(self) -> str:
-        return f'ExpressionStatement({self.expression})'
+        return f"ExpressionStatement({self.expression})"
+
 
 class BlockStatement(Statement):
-    """ Node representing a block statement.
+    """Node representing a block statement.
 
     Args:
         statements (List[Statement]): The statements within the block.
@@ -62,14 +95,16 @@ class BlockStatement(Statement):
             let y = 10;
         }
     """
+
     def __init__(self, statements: List[Statement]) -> None:
         self.statements = statements
 
     def __repr__(self) -> str:
-        return f'BlockStatement({self.statements})'
+        return f"BlockStatement({self.statements})"
+
 
 class IfStatement(Statement):
-    """ Node representing an if statement.
+    """Node representing an if statement.
 
     Args:
         condition (Expression): The condition to be evaluated.
@@ -86,16 +121,23 @@ class IfStatement(Statement):
             return 5;
         }
     """
-    def __init__(self, condition: Expression, then_block: BlockStatement, else_block: Optional[BlockStatement]) -> None:
+
+    def __init__(
+        self,
+        condition: Expression,
+        then_block: BlockStatement,
+        else_block: Optional[BlockStatement],
+    ) -> None:
         self.condition = condition
         self.then_block = then_block
         self.else_block = else_block
 
     def __repr__(self) -> str:
-        return f'IfStatement({self.condition}, {self.then_block}, {self.else_block})'
+        return f"IfStatement({self.condition}, {self.then_block}, {self.else_block})"
+
 
 class WhileStatement(Statement):
-    """ Node representing a while statement.
+    """Node representing a while statement.
 
     Args:
         condition (Expression): The condition to be evaluated.
@@ -115,10 +157,11 @@ class WhileStatement(Statement):
         self.body = body
 
     def __repr__(self) -> str:
-        return f'WhileStatement({self.condition}, {self.body})'
+        return f"WhileStatement({self.condition}, {self.body})"
+
 
 class RangeStatement(Statement):
-    """ Node representing a range statement.
+    """Node representing a range statement.
 
     Args:
         identifier (str): The identifier to be used in the range.
@@ -135,7 +178,15 @@ class RangeStatement(Statement):
             echo i;
         }
     """
-    def __init__(self, identifier: str, start: Expression, end: Expression, increment: Expression, body: BlockStatement) -> None:
+
+    def __init__(
+        self,
+        identifier: str,
+        start: Expression,
+        end: Expression,
+        increment: Expression,
+        body: BlockStatement,
+    ) -> None:
         self.identifier = identifier
         self.start = start
         self.end = end
@@ -143,10 +194,11 @@ class RangeStatement(Statement):
         self.body = body
 
     def __repr__(self) -> str:
-        return f'RangeStatement({self.identifier}, {self.start}, {self.end}, {self.increment}, {self.body})'
+        return f"RangeStatement({self.identifier}, {self.start}, {self.end}, {self.increment}, {self.body})"
+
 
 class EachStatement(Statement):
-    """ Node representing an each statement.
+    """Node representing an each statement.
 
     Args:
         variable (str): The variable to be used in the each statement.
@@ -161,16 +213,20 @@ class EachStatement(Statement):
             echo item;
         }
     """
-    def __init__(self, variable: str, iterable: Expression, body: BlockStatement) -> None:
+
+    def __init__(
+        self, variable: str, iterable: Expression, body: BlockStatement
+    ) -> None:
         self.variable = variable
         self.iterable = iterable
         self.body = body
 
     def __repr__(self) -> str:
-        return f'EachStatement({self.variable}, {self.iterable}, {self.body})'
+        return f"EachStatement({self.variable}, {self.iterable}, {self.body})"
+
 
 class HaltStatement(Statement):
-    """ Node representing a halt statement.
+    """Node representing a halt statement.
 
     Syntax:
         halt;
@@ -178,14 +234,16 @@ class HaltStatement(Statement):
     Example:
         halt;
     """
+
     def __init__(self) -> None:
         pass
 
     def __repr__(self) -> str:
-        return 'HaltStatement()'
+        return "HaltStatement()"
+
 
 class SkipStatement(Statement):
-    """ Node representing a skip statement.
+    """Node representing a skip statement.
 
     Syntax:
         skip;
@@ -193,13 +251,16 @@ class SkipStatement(Statement):
     Example:
         skip;
     """
+
     def __init__(self) -> None:
         pass
+
     def __repr__(self) -> str:
-        return 'SkipStatement()'
+        return "SkipStatement()"
+
 
 class FunctionDeclaration(Statement):
-    """ Node representing a function declaration.
+    """Node representing a function declaration.
 
     Args:
         name (str): The name of the function.
@@ -214,16 +275,20 @@ class FunctionDeclaration(Statement):
             return x + y;
         }
     """
-    def __init__(self, name: str, function_type: FunctionType, body: BlockStatement) -> None:
+
+    def __init__(
+        self, name: str, function_type: FunctionType, body: BlockStatement
+    ) -> None:
         self.name = name
         self.function_type = function_type
         self.body = body
 
     def __repr__(self) -> str:
-        return f'FunctionDeclaration({self.name}, {self.function_type}, {self.body})'
+        return f"FunctionDeclaration({self.name}, {self.function_type}, {self.body})"
+
 
 class ReturnStatement(Statement):
-    """ Node representing a return statement.
+    """Node representing a return statement.
 
     Args:
         expression (Optional[Expression]): The expression to be returned.
@@ -234,14 +299,16 @@ class ReturnStatement(Statement):
     Example:
         return 5;
     """
+
     def __init__(self, expression: Optional[Expression]) -> None:
         self.expression = expression
 
     def __repr__(self) -> str:
-        return f'ReturnStatement({self.expression})'
+        return f"ReturnStatement({self.expression})"
+
 
 class EchoStatement(Statement):
-    """ Node representing an echo statement.
+    """Node representing an echo statement.
 
     Args:
         expression (Expression): The expression to be echoed.
@@ -252,140 +319,176 @@ class EchoStatement(Statement):
     Example:
         echo "Hello, World!";
     """
+
     def __init__(self, expression: Expression) -> None:
         self.expression = expression
 
     def __repr__(self) -> str:
-        return f'EchoStatement({self.expression})'
+        return f"EchoStatement({self.expression})"
+
 
 # Expressions
 class NumericLiteral(Expression):
-    """ Node representing a numeric literal.
+    """Node representing a numeric literal.
 
     Args:
         value (Union[int, float]): The value of the numeric literal.
     """
+
     def __init__(self, value: Union[int, float]) -> None:
         self.value = value
+
     def __repr__(self) -> str:
-        return f'NumericLiteral({self.value})'
+        return f"NumericLiteral({self.value})"
+
 
 class StringLiteral(Expression):
-    """ Node representing a string literal.
+    """Node representing a string literal.
 
     Args:
         value (str): The value of the string literal.
     """
+
     def __init__(self, value: str) -> None:
         self.value = value
+
     def __repr__(self) -> str:
-        return f'StringLiteral({self.value})'
+        return f"StringLiteral({self.value})"
+
 
 class BooleanLiteral(Expression):
-    """ Node representing a boolean literal.
+    """Node representing a boolean literal.
 
     Args:
         value (bool): The value of the boolean literal.
     """
+
     def __init__(self, value: bool) -> None:
         self.value = value
+
     def __repr__(self) -> str:
-        return f'BooleanLiteral({self.value})'
+        return f"BooleanLiteral({self.value})"
+
 
 class NullLiteral(Expression):
-    """ Node representing a null literal. """
+    """Node representing a null literal."""
+
     def __init__(self) -> None:
         self.value = None
+
     def __repr__(self) -> str:
-        return f'NullLiteral()'
+        return "NullLiteral()"
+
 
 class ArrayLiteral(Expression):
-    """ Node representing an array literal.
+    """Node representing an array literal.
 
     Args:
         elements (List[Expression]): The elements of the array.
     """
+
     def __init__(self, elements: List[Expression]) -> None:
         self.elements = elements
+
     def __repr__(self) -> str:
-        return f'ArrayLiteral({self.elements})'
+        return f"ArrayLiteral({self.elements})"
+
 
 class Identifier(Expression):
-    """ Node representing an identifier.
+    """Node representing an identifier.
 
     Args:
         name (str): The name of the identifier.
     """
+
     def __init__(self, name: str) -> None:
         self.name = name
+
     def __repr__(self) -> str:
-        return f'Identifier({self.name})'
+        return f"Identifier({self.name})"
+
 
 class UnaryExpression(Expression):
-    """ Node representing a unary expression.
+    """Node representing a unary expression.
 
     Args:
         operator (TokenType): The operator of the unary expression.
         operand (Expression): The operand of the unary expression.
         position (Literal['PRE', 'POST']): The position of the operator.
     """
-    def __init__(self, operator: TokenType, operand: Expression, position: Literal['PRE', 'POST']) -> None:
+
+    def __init__(
+        self, operator: TokenType, operand: Expression, position: Literal["PRE", "POST"]
+    ) -> None:
         self.operator = operator
         self.operand = operand
         self.position = position
+
     def __repr__(self) -> str:
-        return f'UnaryExpression({self.operator}, {self.operand}, {self.position})'
+        return f"UnaryExpression({self.operator}, {self.operand}, {self.position})"
+
 
 class BinaryExpression(Expression):
-    """ Node representing a binary expression.
+    """Node representing a binary expression.
 
     Args:
         left (Expression): The left operand of the binary expression.
         operator (TokenType): The operator of the binary expression.
         right (Expression): The right operand of the binary expression.
     """
+
     def __init__(self, left: Node, operator: TokenType, right: Node) -> None:
         self.left = left
         self.operator = operator
         self.right = right
+
     def __repr__(self) -> str:
-        return f'BinaryExpression({self.left}, {self.operator}, {self.right})'
+        return f"BinaryExpression({self.left}, {self.operator}, {self.right})"
+
 
 class AssignmentExpression(Expression):
-    """ Node representing an assignment expression.
+    """Node representing an assignment expression.
 
     Args:
         left (Node): The left operand of the assignment expression.
         right (Node): The right operand of the assignment expression.
     """
+
     def __init__(self, left: Node, right: Node) -> None:
         self.left = left
         self.right = right
+
     def __repr__(self) -> str:
-        return f'AssignmentExpression({self.left}, {self.right})'
+        return f"AssignmentExpression({self.left}, {self.right})"
+
 
 class IndexExpression(Expression):
-    """ Node representing an index expression.
+    """Node representing an index expression.
 
     Args:
         array (Expression): The array to be indexed.
         index (Expression): The index of the array.
     """
+
     def __init__(self, array: Expression, index: Expression) -> None:
         self.array = array
         self.index = index
+
     def __repr__(self) -> str:
-        return f'IndexExpression({self.array}, {self.index})'
+        return f"IndexExpression({self.array}, {self.index})"
+
 
 class CallExpression(Expression):
-    """ Node representing a call expression.
+    """Node representing a call expression.
 
     Args:
         callee (Identifier): The function to be called.
         args (List[Expression]): The arguments to be passed to the function.
     """
+
     def __init__(self, callee: Identifier, args: List[Expression]) -> None:
         self.callee = callee
         self.args = args
+
     def __repr__(self) -> str:
-        return f'FunctionCall({self.callee}, {self.args})'
+        return f"FunctionCall({self.callee}, {self.args})"

@@ -1,8 +1,11 @@
-from lexer.lexer import Lexer
-from parser.parser import Parser
-from semantic.analyzer import SemanticAnalyzer
+from frontend.lexer.lexer import Lexer
+from frontend.parser.parser import Parser
+from frontend.semantic.analyzer import SemanticAnalyzer
+
 
 def repl():
+    """Read-Eval-Print Loop"""
+
     print("Cirrus REPL v0.1.0")
 
     while True:
@@ -20,11 +23,12 @@ def repl():
             analyzer.analyze(ast)
 
             print(ast)
-        except (EOFError):
+        except EOFError:
             print("\nExiting REPL")
             break
         except Exception as e:
             print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     repl()

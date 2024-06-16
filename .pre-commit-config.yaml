@@ -2,12 +2,20 @@ repos:
   - repo: local
     hooks:
       - id: run-tests
-        name: Run tests before committing
+        name: Run tests
         entry: bash .hooks/pre-commit.sh
         language: system
         stages: [commit]
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
+      - id: pylint
+        name: Run pylint
+        entry: pylint ./src
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [commit]
+      - id: black
+        name: Run black
+        entry: black src
+        language: system
+        types: [python]
+        stages: [commit]
