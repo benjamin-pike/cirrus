@@ -1,4 +1,4 @@
-from typing import List, Optional, Union, Literal
+from typing import List, Optional, Union, Literal, Tuple
 from abc import ABC
 from frontend.lexer.tokens import TokenType
 from frontend.semantic.types import FunctionType, VarType
@@ -109,7 +109,8 @@ class IfStatement(Statement):
     Args:
         condition (Expression): The condition to be evaluated.
         then_block (BlockStatement): The block to be executed if the condition is true.
-        else_block (Optional[BlockStatement]): The block to be executed if the condition is false.
+        else_block (Optional[BlockStatement]):
+            The block to be executed if the condition is false.
 
     Syntax:
         if <condition> <then_block> else <else_block>
@@ -194,7 +195,10 @@ class RangeStatement(Statement):
         self.body = body
 
     def __repr__(self) -> str:
-        return f"RangeStatement({self.identifier}, {self.start}, {self.end}, {self.increment}, {self.body})"
+        return (
+            f"RangeStatement({self.identifier}, {self.start}, "
+            f"{self.end}, {self.increment}, {self.body})"
+        )
 
 
 class EachStatement(Statement):
@@ -394,6 +398,34 @@ class ArrayLiteral(Expression):
         return f"ArrayLiteral({self.elements})"
 
 
+class SetLiteral(Expression):
+    """Node representing a set literal.
+
+    Args:
+        elements (List[Expression]): The elements of the set.
+    """
+
+    def __init__(self, elements: List[Expression]) -> None:
+        self.elements = elements
+
+    def __repr__(self) -> str:
+        return f"SetLiteral({self.elements})"
+
+
+class MapLiteral(Expression):
+    """Node representing an map literal.
+
+    Args:
+        elements (List[Tuple[Expression, Expression]]): The elements of the map.
+    """
+
+    def __init__(self, elements: List[Tuple[Expression, Expression]]) -> None:
+        self.elements = elements
+
+    def __repr__(self) -> str:
+        return f"MapLiteral({self.elements})"
+
+
 class Identifier(Expression):
     """Node representing an identifier.
 
@@ -478,17 +510,53 @@ class IndexExpression(Expression):
         return f"IndexExpression({self.array}, {self.index})"
 
 
-class CallExpression(Expression):
-    """Node representing a call expression.
+class FunctionCallExpression(Expression):
+    """Node representing a function call expression.
 
     Args:
         callee (Identifier): The function to be called.
         args (List[Expression]): The arguments to be passed to the function.
     """
 
-    def __init__(self, callee: Identifier, args: List[Expression]) -> None:
+    def __init__(self, callee: Expression, args: List[Expression]) -> None:
         self.callee = callee
         self.args = args
 
     def __repr__(self) -> str:
         return f"FunctionCall({self.callee}, {self.args})"
+
+
+class MemberAccessExpression(Expression):
+    """Node representing a member access expression.
+
+    Args:
+        object (Expression): The object to access the member from.
+        member (Identifier): The member to be accessed.
+    """
+
+    def __init__(self, obj: Expression, member: Identifier) -> None:
+        self.obj = obj
+        self.member = member
+
+    def __repr__(self) -> str:
+        return f"MemberAccess({self.obj}, {self.member})"
+
+
+class MethodCallExpression(Expression):
+    """Node representing a method call expression.
+
+    Args:
+        obj (Expression): The object to call the method on.
+        method (Identifier): The method to be called.
+        args (List[Expression]): The arguments to be passed to the method.
+    """
+
+    def __init__(
+        self, obj: Expression, method: Identifier, args: List[Expression]
+    ) -> None:
+        self.obj = obj
+        self.method = method
+        self.args = args
+
+    def __repr__(self) -> str:
+        return f"MethodCall({self.obj}, {self.method}, {self.args})"

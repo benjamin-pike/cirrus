@@ -23,7 +23,7 @@ def test_undeclared_error():
         int x = 5;
         echo y;  // 'y' is not declared
     """
-    with pytest.raises(NameError, match=r'Variable "y" not declared'):
+    with pytest.raises(NameError, match=r'Variable `y` not declared'):
         analyze_code(code)
 
 
@@ -55,7 +55,7 @@ def test_scope_error():
         }
         echo y;  // 'y' is not declared in the outer scope
     """
-    with pytest.raises(NameError, match=r'Variable "y" not declared'):
+    with pytest.raises(NameError, match=r'Variable `y` not declared'):
         analyze_code(code)
 
 
@@ -68,7 +68,7 @@ def test_function_variable_assignment_scope_error():
         }
     """
 
-    with pytest.raises(NameError, match=r'Variable "x" not declared'):
+    with pytest.raises(NameError, match=r'Variable `x` not declared'):
         analyze_code(code)
 
 
@@ -77,11 +77,11 @@ def test_non_local_function_variable_access():
         int x = 10;
 
         func foo -> void = [] >> {
-            echo x; // 'x' is not declared in the function scope
+            echo x; // `x` is not declared in the function scope
         }
     """
 
-    with pytest.raises(NameError, match=r'Variable "x" not declared'):
+    with pytest.raises(NameError, match=r'Variable `x` not declared'):
         analyze_code(code)
 
 
@@ -94,7 +94,7 @@ def test_function_index_assignment_scope_error():
         }
     """
 
-    with pytest.raises(NameError, match=r'Variable "arr" not declared'):
+    with pytest.raises(NameError, match=r'Variable `arr` not declared'):
         analyze_code(code)
 
 
@@ -191,7 +191,7 @@ def test_block_scope():
         echo x;
         echo y; // y should not be accessible here
     """
-    with pytest.raises(NameError, match=r'Variable "y" not declared'):
+    with pytest.raises(NameError, match=r'Variable `y` not declared'):
         analyze_code(code)
 
 
@@ -223,7 +223,7 @@ def test_variable_lifetime():
         }
         echo y; // y should not be accessible here
     """
-    with pytest.raises(NameError, match=r'Variable "y" not declared'):
+    with pytest.raises(NameError, match=r'Variable `y` not declared'):
         analyze_code(code)
 
 

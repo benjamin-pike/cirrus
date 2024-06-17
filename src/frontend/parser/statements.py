@@ -1,4 +1,4 @@
-from typing import *
+from typing import List, Tuple
 from frontend.parser.typing import ParserABC, StatementParserABC
 from frontend.parser.expressions import ExpressionParser
 from frontend.lexer.tokens import TokenType
@@ -9,6 +9,8 @@ from frontend.semantic.types import (
     PrimitiveType,
     VarType,
     VoidType,
+    SetType,
+    MapType,
 )
 from frontend.syntax.ast import (
     EchoStatement,
@@ -30,15 +32,18 @@ from frontend.syntax.ast import (
 
 class StatementParser(StatementParserABC):
     """
-    The StatementParser class parses statements from a list of tokens using the provided parser.
+    The StatementParser class parses statements from
+    a list of tokens using the provided parser.
 
     Attributes:
         parser (ParserABC): The main parser instance.
-        expression_parser (ExpressionParser): An instance of ExpressionParser to handle expression parsing.
+        expression_parser (ExpressionParser):
+            An instance of ExpressionParser to handle expression parsing.
     """
 
     def __init__(self, parser: ParserABC) -> None:
-        """Initialises the StatementParser with the main parser and initialises the expression parser.
+        """Initialises the StatementParser with the main
+        parser and initialises the expression parser.
 
         Args:
             parser (ParserABC): The main parser instance.
@@ -299,7 +304,7 @@ class StatementParser(StatementParserABC):
         Delegates to _parse_function_type if the `func` keyword is encountered.
 
         Returns:
-            Type: The parsed variable type.
+            VarType: The parsed variable type.
         """
 
         if self.parser.current().token_type == TokenType.FUNC:
@@ -325,13 +330,44 @@ class StatementParser(StatementParserABC):
             case _:
                 raise SyntaxError(f"Unexpected token {self.parser.current()}")
 
+        while self.parser.current().token_type in (
+            TokenType.LBRACKET,
+            TokenType.LBRACE,
+        ):
+            if self.parser.current().token_type == TokenType.LBRACKET:
+                var_type = self._parse_array_type(var_type)
+            if self.parser.current().token_type == TokenType.LBRACE:
+                var_type = self._parse_set_or_map_type(var_type)
+
+        return var_type
+
+    def _parse_array_type(self, var_type: VarType) -> VarType:
+        new_type = var_type
+
         while self.parser.current().token_type == TokenType.LBRACKET:
             self.parser.consume(TokenType.LBRACKET)
             self.parser.consume(TokenType.RBRACKET)
 
-            var_type = ArrayType(var_type)
+            new_type = ArrayType(new_type)
 
-        return var_type
+        return new_type
+
+    def _parse_set_or_map_type(self, var_type: VarType) -> VarType:
+        new_type = var_type
+
+        while self.parser.current().token_type == TokenType.LBRACE:
+            self.parser.consume(TokenType.LBRACE)
+            if self.parser.current().token_type == TokenType.RBRACE:
+                self.parser.consume(TokenType.RBRACE)
+
+                new_type = SetType(var_type)
+            else:
+                key_type = self._parse_var_type()
+                self.parser.consume(TokenType.RBRACE)
+
+                new_type = MapType(key_type, var_type)
+
+        return new_type
 
     def _parse_return_type(self) -> VarType:
         """Parses a return type for a function declaration.
@@ -346,7 +382,12 @@ class StatementParser(StatementParserABC):
 
         return self._parse_var_type()
 
-    def _parse_function_type(self):
+    def _parse_function_type(self) -> FunctionType:
+        """Parses a function type.
+
+        Returns:
+            FunctionType: The parsed function type.
+        """
         self.parser.consume(TokenType.FUNC)
         self.parser.consume(TokenType.LT)
 

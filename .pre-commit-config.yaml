@@ -6,16 +6,10 @@ repos:
         entry: bash .hooks/pre-commit.sh
         language: system
         stages: [commit]
-      - id: pylint
-        name: Run pylint
-        entry: pylint ./src
+      - id: structure
+        name: Check structure
+        entry: make structure
         language: system
         types: [python]
         pass_filenames: false
-        stages: [commit]
-      - id: black
-        name: Run black
-        entry: black src
-        language: system
-        types: [python]
         stages: [commit]

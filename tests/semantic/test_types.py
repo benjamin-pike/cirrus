@@ -24,7 +24,7 @@ def test_type_error():
     """
     with pytest.raises(
         TypeError,
-        match=r"Type mismatch for variable x: PrimitiveType\(TokenType.INT\) != PrimitiveType\(TokenType.STRING\)",
+        match=r"Type mismatch for variable `x`: `PrimitiveType\(INT\)` != `PrimitiveType\(STRING\)`",
     ):
         analyze_code(code)
 
@@ -36,7 +36,7 @@ def test_conflicting_infer_type():
     """
     with pytest.raises(
         TypeError,
-        match=r"Type mismatch in assignment expression: PrimitiveType\(TokenType.INT\) != PrimitiveType\(TokenType.STRING\)",
+        match=r"Type mismatch in assignment expression: PrimitiveType\(INT\) != PrimitiveType\(STRING\)",
     ):
         analyze_code(code)
 
@@ -49,7 +49,7 @@ def test_conflicting_complex_infer_type():
     """
     with pytest.raises(
         TypeError,
-        match=r"Type mismatch in assignment expression: PrimitiveType\(TokenType.INT\) != PrimitiveType\(TokenType.STRING\)",
+        match=r"Type mismatch in assignment expression: PrimitiveType\(INT\) != PrimitiveType\(STRING\)",
     ):
         analyze_code(code)
 
@@ -61,7 +61,7 @@ def test_conflicting_infer_array_type():
     """
     with pytest.raises(
         TypeError,
-        match=r"Type mismatch in assignment expression: ArrayType\(PrimitiveType\(TokenType.INT\)\) != PrimitiveType\(TokenType.STRING\)",
+        match=r"Type mismatch in assignment expression: ArrayType\(PrimitiveType\(INT\)\) != PrimitiveType\(STRING\)",
     ):
         analyze_code(code)
 
@@ -70,7 +70,7 @@ def test_mixed_array_declaration():
     code = """
         int[] arr = [1, 'hello', 3];  // Mixed types
     """
-    with pytest.raises(TypeError, match=r"Inconsistent element types in array literal"):
+    with pytest.raises(TypeError, match=r"Invalid element type in array literal"):
         analyze_code(code)
 
 
@@ -82,7 +82,7 @@ def test_invalid_return_type():
     """
     with pytest.raises(
         TypeError,
-        match=r"Return type PrimitiveType\(TokenType.STRING\) does not match function return type PrimitiveType\(TokenType.INT\)",
+        match=r"Return type `PrimitiveType\(STRING\)` does not match function return type `PrimitiveType\(INT\)`",
     ):
         analyze_code(code)
 
@@ -96,7 +96,7 @@ def test_invalid_function_call_type():
     """
     with pytest.raises(
         TypeError,
-        match=r"Argument type PrimitiveType\(TokenType.STRING\) does not match parameter type PrimitiveType\(TokenType.INT\)",
+        match=r"Argument type `PrimitiveType\(STRING\)` does not match parameter type `PrimitiveType\(INT\)`",
     ):
         analyze_code(code)
 
@@ -108,8 +108,53 @@ def test_invalid_array_type():
     """
     with pytest.raises(
         TypeError,
-        match=r"Type mismatch in assignment expression: PrimitiveType\(TokenType.INT\) != PrimitiveType\(TokenType.STRING\)",
+        match=r"Type mismatch in assignment expression: PrimitiveType\(INT\) != PrimitiveType\(STRING\)",
     ):
+        analyze_code(code)
+
+
+def test_invalid_set_type():
+    code = """
+        int{} set = {1, 'hello', 3};
+    """
+
+    with pytest.raises(TypeError, match=r"Invalid element type in set literal"):
+        analyze_code(code)
+
+
+def test_invalid_map_key_type():
+    code = """
+        int{string} map = {1: 1, 'world': 2};
+    """
+
+    with pytest.raises(TypeError, match=r"Invalid key type in map literal"):
+        analyze_code(code)
+
+
+def test_invalid_map_value_type():
+    code = """
+        int{string} map = {'hello': 1, 'world': 'invalid'};
+    """
+
+    with pytest.raises(TypeError, match=r"Invalid value type in map literal"):
+        analyze_code(code)
+
+
+def test_unhashable_set_element_type():
+    code = """
+        int[]{} set = {[1, 2, 3], [4, 5, 6]};
+    """
+
+    with pytest.raises(TypeError, match=r"Element type of set must be hashable"):
+        analyze_code(code)
+
+
+def test_unhashable_map_key_type():
+    code = """
+        int{int[]} map = {[1, 2, 3]: 1, [4, 5, 6]: 2};
+    """
+
+    with pytest.raises(TypeError, match=r"Key type of map must be hashable"):
         analyze_code(code)
 
 
@@ -156,7 +201,7 @@ def test_binary_expression_type_mismatch():
     """
     with pytest.raises(
         TypeError,
-        match=r"Type mismatch in binary expression: PrimitiveType\(TokenType.INT\) != PrimitiveType\(TokenType.STRING\)",
+        match=r"Type mismatch in binary expression: PrimitiveType\(INT\) != PrimitiveType\(STRING\)",
     ):
         analyze_code(code)
 
@@ -183,7 +228,7 @@ def test_logical_unary_expression_type_mismatch():
     """
     with pytest.raises(
         TypeError,
-        match=r"Invalid operand type for TokenType.LOGICAL_NOT: PrimitiveType\(TokenType.INT\)",
+        match=r"Invalid operand type for TokenType.LOGICAL_NOT: PrimitiveType\(INT\)",
     ):
         analyze_code(code)
 
@@ -196,16 +241,16 @@ def test_function_return_type_mismatch():
     """
     with pytest.raises(
         TypeError,
-        match=r"Return type PrimitiveType\(TokenType.STRING\) does not match function return type PrimitiveType\(TokenType.INT\)",
+        match=r"Return type `PrimitiveType\(STRING\)` does not match function return type `PrimitiveType\(INT\)`",
     ):
         analyze_code(code)
 
 
-def test_inconsistent_array_element_types():
+def test_invalid_array_element_type():
     code = """
-        int[] arr = [1, 2, "three"];  // Inconsistent element types
+        int[] arr = [1, 2, "three"];  // Invalid element type
     """
-    with pytest.raises(TypeError, match=r"Inconsistent element types in array literal"):
+    with pytest.raises(TypeError, match=r"Invalid element type in array literal"):
         analyze_code(code)
 
 
@@ -226,6 +271,6 @@ def test_invalid_logical_operation():
     """
     with pytest.raises(
         TypeError,
-        match=r"Invalid operand type for TokenType.LOGICAL_AND: PrimitiveType\(TokenType.INT\)",
+        match=r"Invalid operand type for TokenType.LOGICAL_AND: PrimitiveType\(INT\)",
     ):
         analyze_code(code)

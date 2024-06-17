@@ -5,6 +5,8 @@ from frontend.semantic.types import (
     PrimitiveType,
     VarType,
     VoidType,
+    SetType,
+    MapType,
 )
 from frontend.syntax.ast import *
 
@@ -16,7 +18,8 @@ class StatementAnalyzer(StatementAnalyzerABC):
         self.analyzer = analyzer
 
     def analyze_variable_declaration(self, node: VariableDeclaration) -> VarType:
-        """Analyses a VariableDeclaration node, adding the variable to the symbol table and checking its type.
+        """Analyses a VariableDeclaration node,
+        adding the variable to the symbol table and checking its type.
 
         Args:
             node (VariableDeclaration): The VariableDeclaration node to analyse.
@@ -28,6 +31,8 @@ class StatementAnalyzer(StatementAnalyzerABC):
             NameError: If the variable is redeclared.
             NameError: If the variable shadows an existing variable.
             TypeError: If the variable type does not match the initializer type.
+            TypeError: If the element type of a set is not hashable.
+            TypeError: If the key type of a map is not hashable.
         """
         init_type = self.analyzer.analyze(node.initializer)
 
@@ -44,15 +49,24 @@ class StatementAnalyzer(StatementAnalyzerABC):
             node.var_type = init_type  # Infer the variable type from the initializer
         if node.var_type != init_type:
             raise TypeError(
-                f"Type mismatch for variable {node.name}: {node.var_type} != {init_type}"
+                f"Type mismatch for variable `{node.name}`: "
+                f"`{node.var_type}` != `{init_type}`"
             )
+
+        if isinstance(node.var_type, SetType):
+            if not self._is_hashable_type(node.var_type.element_type):
+                raise TypeError("Element type of set must be hashable")
+        if isinstance(node.var_type, MapType):
+            if not self._is_hashable_type(node.var_type.key_type):
+                raise TypeError("Key type of map must be hashable")
 
         self.analyzer.symbol_table.define(node.name, node.var_type)
 
         return node.var_type
 
     def analyze_function_declaration(self, node: FunctionDeclaration) -> VarType:
-        """Analyses a FunctionDeclaration node, adding the function to the symbol table and managing parameter scope.
+        """Analyses a FunctionDeclaration node, adding the function
+        to the symbol table and managing parameter scope.
 
         Args:
             node (FunctionDeclaration): The FunctionDeclaration node to analyse.
@@ -83,6 +97,7 @@ class StatementAnalyzer(StatementAnalyzerABC):
 
         Args:
             node (BlockStatement): The BlockStatement node to analyse.
+            new_scope (bool): Whether to create a new scope for the block.
 
         Returns:
             VoidType: Void type.
@@ -144,7 +159,15 @@ class StatementAnalyzer(StatementAnalyzerABC):
 
         return VoidType()
 
-    def _analyze_then_block(self, node: IfStatement):
+    def _analyze_then_block(self, node: IfStatement) -> bool:
+        """Analyzes the then block of an IfStatement node.
+
+        Args:
+            node (IfStatement): The IfStatement node to analyse.
+
+        Returns:
+            bool: True if the then block is reachable, otherwise False.
+        """
         self.analyzer.symbol_table.enter_scope(node)
         self.analyze_block_statement(node.then_block, False)
         then_reachable = self.analyzer.symbol_table.is_reachable()
@@ -152,7 +175,15 @@ class StatementAnalyzer(StatementAnalyzerABC):
 
         return then_reachable
 
-    def _analyze_else_block(self, node: IfStatement):
+    def _analyze_else_block(self, node: IfStatement) -> bool:
+        """Analyzes the else block of an IfStatement node.
+
+        Args:
+            node (IfStatement): The IfStatement node to analyse.
+
+        Returns:
+            bool: True if the else block is reachable, otherwise False.
+        """
         if node.else_block:
             self.analyzer.symbol_table.enter_scope(node)
             self.analyze_block_statement(node.else_block, False)
@@ -186,7 +217,8 @@ class StatementAnalyzer(StatementAnalyzerABC):
         return VoidType()
 
     def analyze_range_statement(self, node: RangeStatement) -> VoidType:
-        """Analyses a RangeStatement node, adding the variable to the symbol table and checking types.
+        """Analyses a RangeStatement node, adding the
+        variable to the symbol table and checking types.
 
         Args:
             node (RangeStatement): The RangeStatement node to analyse.
@@ -216,8 +248,8 @@ class StatementAnalyzer(StatementAnalyzerABC):
         return VoidType()
 
     def analyze_each_statement(self, node: EachStatement) -> VoidType:
-        """Analyses an EachStatement node, adding the iteration variable to the symbol table
-        and creating a new scope for its body.
+        """Analyses an EachStatement node, adding the iteration variable
+        to the symbol table and creating a new scope for its body.
 
         Args:
             node (EachStatement): The EachStatement node to analyse.
@@ -241,7 +273,7 @@ class StatementAnalyzer(StatementAnalyzerABC):
         return VoidType()
 
     def analyze_halt_statement(self, node: HaltStatement) -> VoidType:
-        """Analyses a HaltStatement node, marking the current scope as unreachable.
+        """Analyses a HaltStatement, marking the current scope as unreachable.
 
         Args:
             node (HaltStatement): The HaltStatement node to analyse.
@@ -259,6 +291,17 @@ class StatementAnalyzer(StatementAnalyzerABC):
         return VoidType()
 
     def analyze_skip_statement(self, node: SkipStatement) -> VoidType:
+        """Analyses a SkipStatement, marking the current scope as unreachable.
+
+        Args:
+            node (SkipStatement): The SkipStatement node to analyse.
+
+        Returns:
+            VoidType: Void type.
+
+        Raises:
+            SyntaxError: If the skip statement is not within a loop block.
+        """
         if not self.analyzer.symbol_table.is_loop_scope():
             raise SyntaxError("Skip statement is not valid outside of a loop block")
         self.analyzer.symbol_table.set_unreachable()
@@ -302,9 +345,21 @@ class StatementAnalyzer(StatementAnalyzerABC):
             return_type = self.analyzer.analyze(node.expression)
         if return_type != fn_type.return_type:
             raise TypeError(
-                f"Return type {return_type} does not match function return type {fn_type.return_type}"
+                f"Return type `{return_type}` does not match "
+                f"function return type `{fn_type.return_type}`"
             )
 
         self.analyzer.symbol_table.set_unreachable()
 
         return return_type
+
+    def _is_hashable_type(self, var_type: VarType) -> bool:
+        """Checks if a variable type is hashable.
+
+        Args:
+            var_type (VarType): The variable type to check.
+
+        Returns:
+            bool: True if the variable type is hashable, otherwise False.
+        """
+        return isinstance(var_type, (PrimitiveType, SetType))

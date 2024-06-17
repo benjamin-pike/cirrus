@@ -3,7 +3,8 @@ from frontend.lexer.tokens import TokenType
 
 class Token:
     """
-    The Token class represents a single token with its type, value, line number, and column number.
+    The Token class represents a single token with its
+    type, value, line number, and column number.
 
     Attributes:
         type (TokenType): The type of the token.

@@ -27,7 +27,8 @@ class Scope(ScopeABC):
 
     Attributes:
         symbols (Dict[str, Symbol]): A dictionary mapping names to symbols.
-        function_type (Optional[FunctionType]): The function type if this scope is a function scope, otherwise None.
+        parent_node (Optional[Statement]): The parent node of the scope, if any.
+        reachable (bool): True if the scope is reachable, otherwise False.
     """
 
     def __init__(self, parent_node: Optional[Statement] = None) -> None:
@@ -36,7 +37,10 @@ class Scope(ScopeABC):
         self.reachable = True
 
     def __repr__(self) -> str:
-        return f"Scope(parent_node={self.parent_node}, symbols={list(self.symbols.keys())})"
+        return (
+            f"Scope(parent_node={self.parent_node}, "
+            f"symbols={self.symbols}, reachable={self.reachable})"
+        )
 
 
 class SymbolTable(SymbolTableABC):
@@ -90,7 +94,8 @@ class SymbolTable(SymbolTableABC):
 
         Args:
             name (str): The name of the symbol to lookup.
-            limit_to_function (bool): If True, only search up to the nearest function scope.
+            limit_to_function (bool):
+                If True, only search up to the nearest function scope.
 
         Returns:
             Optional[Symbol]: The symbol if found, otherwise None.

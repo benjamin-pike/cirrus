@@ -37,8 +37,11 @@ class TokenType(Enum):
     RBRACE = auto()  # "}"
     LBRACKET = auto()  # "["
     RBRACKET = auto()  # "]"
+
+    DOT = auto()  # "."
     COMMA = auto()  # ","
     SEMICOLON = auto()  # ";"
+    COLON = auto()  # ":"
     ARROW = auto()  # ">>"
     RETURN_ARROW = auto()  # "->"
 
@@ -123,8 +126,10 @@ spec = (
     (TokenType.RBRACE, r"\}"),
     (TokenType.LBRACKET, r"\["),
     (TokenType.RBRACKET, r"\]"),
+    (TokenType.DOT, r"\."),
     (TokenType.COMMA, r","),
     (TokenType.SEMICOLON, r";"),
+    (TokenType.COLON, r":"),
     (TokenType.ARROW, r">>"),
     (TokenType.RETURN_ARROW, r"->"),
     (TokenType.EOL_COMMENT, r"//.*\n"),

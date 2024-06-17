@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import *
+from typing import Any, List, Tuple
 from frontend.lexer.tokens import TokenType
 
 
@@ -8,13 +8,17 @@ class VarType(ABC):
 
 
 class PrimitiveType(VarType):
-    """Represents primitive types"""
+    """Represents primitive types
+
+    Args:
+        primitive (TokenType): The primitive type
+    """
 
     def __init__(self, primitive: TokenType):
         self.primitive = primitive
 
     def __repr__(self):
-        return f"PrimitiveType({self.primitive})"
+        return f"PrimitiveType({self.primitive.name})"
 
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, PrimitiveType) and self.primitive == other.primitive
@@ -37,8 +41,38 @@ class VoidType(PrimitiveType):
         super().__init__(TokenType.VOID)
 
 
+class FunctionType(VarType):
+    """Represents function types
+
+    Args:
+        return_type (VarType): The return type of the function
+        param_types (List[Tuple[str, VarType]]): The parameter types of the function
+    """
+
+    def __init__(self, return_type: VarType, param_types: List[Tuple[str, VarType]]):
+        self.return_type = return_type
+        self.param_types = param_types
+
+    def __repr__(self):
+        return f"Function({self.return_type}, {self.param_types})"
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, FunctionType)
+            and self.return_type == other.return_type
+            and self.param_types == other.param_types
+        )
+
+    def __hash__(self) -> int:
+        return hash(self.__repr__())
+
+
 class ArrayType(VarType):
-    """Represents array types"""
+    """Represents array types
+
+    Args:
+        element_type (VarType): The type of the elements in the array
+    """
 
     def __init__(self, element_type: VarType):
         self.element_type = element_type
@@ -53,21 +87,64 @@ class ArrayType(VarType):
         return hash(self.__repr__())
 
 
-class FunctionType(VarType):
-    """Represents function types"""
+class SetType(VarType):
+    """Represents set types
 
-    def __init__(self, return_type: VarType, param_types: List[Tuple[str, VarType]]):
-        self.return_type = return_type
-        self.param_types = param_types
+    Args:
+        element_type (VarType): The type of the elements in the set
+    """
+
+    def __init__(self, element_type: VarType):
+        self.element_type = element_type
+        self.methods = {
+            "add": FunctionType(self, [("element", element_type)]),
+            "remove": FunctionType(self, [("element", element_type)]),
+            "clear": FunctionType(self, []),
+            "contains": FunctionType(
+                PrimitiveType(TokenType.BOOL), [("element", element_type)]
+            ),
+            "size": FunctionType(PrimitiveType(TokenType.INT), []),
+        }
 
     def __repr__(self):
-        return f"Function({self.return_type}, {self.param_types})"
+        return f"SetType({self.element_type})"
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, SetType) and self.element_type == other.element_type
+
+    def __hash__(self) -> int:
+        return hash(self.__repr__())
+
+
+class MapType(VarType):
+    """Represents map types
+
+    Args:
+        key_type (VarType): The type of the keys in the map
+    """
+
+    def __init__(self, key_type: VarType, value_type: VarType):
+        self.key_type = key_type
+        self.value_type = value_type
+        self.methods = {
+            "get": FunctionType(value_type, [("key", key_type)]),
+            "put": FunctionType(self, [("key", key_type), ("value", value_type)]),
+            "remove": FunctionType(self, [("key", key_type)]),
+            "clear": FunctionType(self, []),
+            "contains": FunctionType(
+                PrimitiveType(TokenType.BOOL), [("key", key_type)]
+            ),
+            "size": FunctionType(PrimitiveType(TokenType.INT), []),
+        }
+
+    def __repr__(self):
+        return f"MapType({self.key_type}, {self.value_type})"
 
     def __eq__(self, other: Any) -> bool:
         return (
-            isinstance(other, FunctionType)
-            and self.return_type == other.return_type
-            and self.param_types == other.param_types
+            isinstance(other, MapType)
+            and self.key_type == other.key_type
+            and self.value_type == other.value_type
         )
 
     def __hash__(self) -> int:

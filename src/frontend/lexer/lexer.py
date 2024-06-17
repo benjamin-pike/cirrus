@@ -6,9 +6,9 @@ from frontend.lexer.token import Token
 
 class Lexer:
     """
-    The Lexer is responsible for converting a string of source code into a stream of tokens
-    that can be used by a parser. It uses regular expressions to identify token types based on
-    predefined specifications.
+    The Lexer is responsible for converting a string of source code into a stream of
+    tokens that can be used by a parser. It uses regular expressions to identify token
+    types based on predefined specifications.
 
     Attributes:
         code (str): The source code to be tokenised.
@@ -37,7 +37,8 @@ class Lexer:
         Raises:
             SyntaxError: If an invalid token is encountered.
         """
-        # Compile the regular expression based on the token specification (spec = [(TokenType, regex), ...])
+        # Compile the regular expression based on the token specification
+        # (spec = [(TokenType, regex), ...])
         regex: str = "|".join(f"(?P<{pair[0].name}>{pair[1]})" for pair in spec)
         get_token = re.compile(
             regex
