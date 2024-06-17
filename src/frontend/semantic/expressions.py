@@ -1,10 +1,11 @@
 from frontend.semantic.types import *
+from frontend.semantic.types import VarType
 from frontend.semantic.typing import *
 from frontend.syntax.ast import *
 
 
 class ExpressionAnalyzer(ExpressionAnalyzerABC):
-    """Class that provides methods for analyzing the semantic validity of expressions."""
+    """Class that provides methods for analyzing the expression semantics."""
 
     def __init__(self, analyzer: SemanticAnalyzerABC) -> None:
         self.analyzer = analyzer
@@ -126,7 +127,7 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
             raise TypeError("Invalid assignment target")
 
         if not self.analyzer.symbol_table.lookup(var_name, True):
-            raise NameError(f'Variable "{var_name}" not declared')
+            raise NameError(f"Variable `{var_name}` not declared")
 
         left_type = self.analyzer.analyze(node.left)
         right_type = self.analyzer.analyze(node.right)
@@ -186,7 +187,8 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return PrimitiveType(TokenType.NULL)
 
     def analyze_identifier(self, node: Identifier) -> VarType:
-        """Analyses an Identifier node, checking if the variable is declared and returning its declared type.
+        """Analyses an Identifier node, checking if the
+        variable is declared and returning its declared type.
 
         Args:
             node (Identifier): The Identifier node to analyse.
@@ -199,42 +201,61 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         """
         symbol = self.analyzer.symbol_table.lookup(node.name, True)
         if not symbol:
-            raise NameError(f'Variable "{node.name}" not declared')
+            raise NameError(f"Variable `{node.name}` not declared")
 
         return symbol.var_type
 
-    def analyze_call_expression(self, node: CallExpression) -> VarType:
-        """Analyses a CallExpression node, checking the function declaration and argument types.
+    def analyze_function_call_expression(self, node: FunctionCallExpression) -> VarType:
+        """Analyses a FunctionCallExpression node,
+        checking the function declaration and argument types.
 
         Args:
-            node (CallExpression): The CallExpression node to analyse.
+            node (FunctionCallExpression): The FunctionCallExpression node to analyse.
 
         Raises:
             NameError: If the function is not declared.
             TypeError: If the function is not a function type.
-            TypeError: If the number of arguments does not match the function declaration.
+            TypeError:
+                If the number of arguments does not match the function declaration.
             TypeError: If the argument types do not match the function declaration.
 
         Returns:
             VarType: The return type of the function.
         """
-        symbol = self.analyzer.symbol_table.lookup(node.callee.name)
-        if symbol is None:
-            raise NameError(f"Function {node.callee.name} not declared")
-        if not isinstance(symbol.var_type, FunctionType):
-            raise TypeError(f"{node.callee.name} is not a function")
 
-        function_type = symbol.var_type
+        function_type: FunctionType
+        if isinstance(node.callee, Identifier):
+            symbol = self.analyzer.symbol_table.lookup(node.callee.name)
+            if symbol is None:
+                raise NameError(f"Function `{node.callee.name}` not declared")
+            if not isinstance(symbol.var_type, FunctionType):
+                raise TypeError(f"`{node.callee.name}` is not a function")
+            function_type = symbol.var_type
+        else:
+            node_type = self.analyzer.analyze(node.callee)
+            if not isinstance(node_type, FunctionType):
+                raise TypeError(
+                    "Callee expression does not evaluate to a function type"
+                )
+            function_type = node_type
+
         if len(node.args) != len(function_type.param_types):
+            if isinstance(node.callee, Identifier):
+                raise TypeError(
+                    f"Function `{node.callee.name}` expects "
+                    f"{len(function_type.param_types)} arguments, got {len(node.args)}"
+                )
             raise TypeError(
-                f"Function {node.callee.name} expects {len(function_type.param_types)} arguments, got {len(node.args)}"
+                f"Function expects {len(function_type.param_types)} "
+                f"arguments, got {len(node.args)}"
             )
 
         for arg, (_, param_type) in zip(node.args, function_type.param_types):
             arg_type = self.analyzer.analyze(arg)
             if arg_type != param_type:
                 raise TypeError(
-                    f"Argument type {arg_type} does not match parameter type {param_type}"
+                    f"Argument type `{arg_type}` does not "
+                    f"match parameter type `{param_type}`"
                 )
 
         return function_type.return_type
@@ -249,7 +270,7 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
             VarType: The type of the array.
 
         Raises:
-            TypeError: If the element types are inconsistent.
+            TypeError: If the element types are invalid.
         """
         if not node.elements:
             return ArrayType(PrimitiveType(TokenType.NULL))
@@ -257,9 +278,60 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         element_type = self.analyzer.analyze(node.elements[0])
         for element in node.elements:
             if self.analyzer.analyze(element) != element_type:
-                raise TypeError("Inconsistent element types in array literal")
+                raise TypeError("Invalid element type in array literal")
 
         return ArrayType(element_type)
+
+    def analyze_set_literal(self, node: SetLiteral) -> VarType:
+        """Analyses a SetLiteral node, checking the element types.
+
+        Args:
+            node (SetLiteral): The SetLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the set.
+
+        Raises:
+            TypeError: If the element types are invalid.
+        """
+        if not node.elements:
+            return SetType(PrimitiveType(TokenType.NULL))
+
+        element_type = self.analyzer.analyze(node.elements[0])
+        for element in node.elements:
+            if self.analyzer.analyze(element) != element_type:
+                raise TypeError("Invalid element type in set literal")
+
+        return SetType(element_type)
+
+    def analyze_map_literal(self, node: MapLiteral) -> VarType:
+        """Analyses a MapLiteral node, checking the key and value types.
+
+        Args:
+            node (MapLiteral): The MapLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the map.
+
+        Raises:
+            TypeError: If the key types are invalid.
+            TypeError: If the value types are invalid.
+        """
+
+        if not node.elements:
+            return MapType(PrimitiveType(TokenType.NULL), PrimitiveType(TokenType.NULL))
+
+        key, val = node.elements[0]
+        key_type = self.analyzer.analyze(key)
+        value_type = self.analyzer.analyze(val)
+
+        for k, v in node.elements:
+            if self.analyzer.analyze(k) != key_type:
+                raise TypeError("Invalid key type in map literal")
+            if self.analyzer.analyze(v) != value_type:
+                raise TypeError("Invalid value type in map literal")
+
+        return MapType(key_type, value_type)
 
     def analyze_index_expression(self, node: IndexExpression) -> VarType:
         """Analyses an IndexExpression node, checking the array and index types.
@@ -284,6 +356,50 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
             raise TypeError("Indexing non-array type")
 
         return array_type.element_type
+
+    def analyze_member_access_expression(self, node: MemberAccessExpression) -> VarType:
+        """Not implemented."""
+        raise NotImplementedError
+
+    def analyze_method_call_expression(self, node: MethodCallExpression) -> VarType:
+        """Analyses a MethodCallExpression node,
+        checking the object type and method name.
+
+        Args:
+            node (MethodCallExpression): The MethodCallExpression node to analyse.
+
+        Returns:
+            VarType: The return type of the method.
+
+        Raises:
+            TypeError: If the object type does not have the method.
+            TypeError: If the argument types do not match the method declaration.
+        """
+        obj_type = self.analyzer.analyze(node.obj)
+        if not isinstance(obj_type, (SetType, MapType)):
+            raise TypeError(f"Type `{obj_type}` does not have methods")
+        method_type = obj_type.methods.get(node.method.name)
+
+        if method_type is None:
+            raise TypeError(
+                f"Method `{node.method.name}` is not defined on type `{obj_type}`"
+            )
+
+        if len(node.args) != len(method_type.param_types):
+            raise TypeError(
+                f"Method `{node.method.name}` expects {len(method_type.param_types)} "
+                f"arguments, got {len(node.args)}"
+            )
+
+        for arg, (_, param_type) in zip(node.args, method_type.param_types):
+            arg_type = self.analyzer.analyze(arg)
+            if arg_type != param_type:
+                raise TypeError(
+                    f"Argument type `{arg_type}` does not "
+                    f"match parameter type `{param_type}`"
+                )
+
+        return method_type.return_type
 
     # Helpers
     def _is_assignable(self, node: Expression) -> bool:

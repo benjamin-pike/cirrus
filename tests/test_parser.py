@@ -1,7 +1,7 @@
 from frontend.lexer.lexer import Lexer
 from frontend.lexer.tokens import TokenType
 from frontend.parser.parser import Parser
-from frontend.semantic.types import ArrayType, PrimitiveType
+from frontend.semantic.types import ArrayType, PrimitiveType, SetType, MapType
 from frontend.syntax.ast import *
 
 
@@ -164,14 +164,18 @@ def test_complex_unary_expressions():
                 "y",
                 PrimitiveType(TokenType.INT),
                 UnaryExpression(
-                    TokenType.DECREMENT, CallExpression(Identifier("b"), []), "PRE"
+                    TokenType.DECREMENT,
+                    FunctionCallExpression(Identifier("b"), []),
+                    "PRE",
                 ),
             ),
             VariableDeclaration(
                 "z",
                 PrimitiveType(TokenType.BOOL),
                 UnaryExpression(
-                    TokenType.LOGICAL_NOT, CallExpression(Identifier("c"), []), "PRE"
+                    TokenType.LOGICAL_NOT,
+                    FunctionCallExpression(Identifier("c"), []),
+                    "PRE",
                 ),
             ),
         ]
@@ -243,6 +247,168 @@ def test_combined_array_example():
                     NumericLiteral(5),
                 )
             ),
+        ]
+    )
+    check(code, expected)
+
+
+def test_set_literal():
+    code = """
+        int{} x = {1, 2, 3};
+    """
+    expected = Program(
+        [
+            VariableDeclaration(
+                "x",
+                SetType(PrimitiveType(TokenType.INT)),
+                SetLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
+            )
+        ]
+    )
+    check(code, expected)
+
+
+def test_map_literal():
+    code = """
+        int{string} x = {"a": 1, "b": 2};
+    """
+    expected = Program(
+        [
+            VariableDeclaration(
+                "x",
+                MapType(PrimitiveType(TokenType.STRING), PrimitiveType(TokenType.INT)),
+                MapLiteral(
+                    [
+                        (StringLiteral("a"), NumericLiteral(1)),
+                        (StringLiteral("b"), NumericLiteral(2)),
+                    ]
+                ),
+            )
+        ]
+    )
+    check(code, expected)
+
+
+def test_set_method_call():
+    code = """
+        int{} x = {1, 2, 3};
+        x.add(4).remove(2);
+    """
+
+    expected = Program(
+        [
+            VariableDeclaration(
+                "x",
+                SetType(PrimitiveType(TokenType.INT)),
+                SetLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
+            ),
+            ExpressionStatement(
+                MethodCallExpression(
+                    MethodCallExpression(
+                        Identifier("x"), Identifier("add"), [NumericLiteral(4)]
+                    ),
+                    Identifier("remove"),
+                    [NumericLiteral(2)],
+                )
+            ),
+        ]
+    )
+    check(code, expected)
+
+
+def test_map_method_call():
+    code = """
+        int{string} y = {"a": 1, "b": 2};
+        int b = y.set("c", 3).remove("a").get("b");
+        y.clear();
+    """
+    expected = Program(
+        [
+            VariableDeclaration(
+                "y",
+                MapType(PrimitiveType(TokenType.STRING), PrimitiveType(TokenType.INT)),
+                MapLiteral(
+                    [
+                        (StringLiteral("a"), NumericLiteral(1)),
+                        (StringLiteral("b"), NumericLiteral(2)),
+                    ]
+                ),
+            ),
+            VariableDeclaration(
+                "b",
+                PrimitiveType(TokenType.INT),
+                MethodCallExpression(
+                    MethodCallExpression(
+                        MethodCallExpression(
+                            Identifier("y"),
+                            Identifier("set"),
+                            [StringLiteral("c"), NumericLiteral(3)],
+                        ),
+                        Identifier("remove"),
+                        [StringLiteral("a")],
+                    ),
+                    Identifier("get"),
+                    [StringLiteral("b")],
+                ),
+            ),
+            ExpressionStatement(
+                MethodCallExpression(Identifier("y"), Identifier("clear"), [])
+            ),
+        ]
+    )
+    check(code, expected)
+
+
+def test_complex_collection_type():
+    code = """
+        // Array of array of maps with int set keys and string values
+        string{int{}}[][] x = [[{{1, 2, 3}: 'hello', {4, 5, 6}: 'world'}]];
+    """
+    expected = Program(
+        [
+            VariableDeclaration(
+                "x",
+                ArrayType(
+                    ArrayType(
+                        MapType(
+                            SetType(PrimitiveType(TokenType.INT)),
+                            PrimitiveType(TokenType.STRING),
+                        ),
+                    )
+                ),
+                ArrayLiteral(
+                    [
+                        ArrayLiteral(
+                            [
+                                MapLiteral(
+                                    [
+                                        (
+                                            SetLiteral(
+                                                [
+                                                    NumericLiteral(1),
+                                                    NumericLiteral(2),
+                                                    NumericLiteral(3),
+                                                ]
+                                            ),
+                                            StringLiteral("hello"),
+                                        ),
+                                        (
+                                            SetLiteral(
+                                                [
+                                                    NumericLiteral(4),
+                                                    NumericLiteral(5),
+                                                    NumericLiteral(6),
+                                                ]
+                                            ),
+                                            StringLiteral("world"),
+                                        ),
+                                    ]
+                                )
+                            ]
+                        )
+                    ]
+                ),
+            )
         ]
     )
     check(code, expected)
@@ -368,7 +534,9 @@ def test_skip_statement():
                 BlockStatement(
                     [
                         IfStatement(
-                            CallExpression(Identifier("isEven"), [Identifier("x")]),
+                            FunctionCallExpression(
+                                Identifier("isEven"), [Identifier("x")]
+                            ),
                             BlockStatement([SkipStatement()]),
                             None,
                         )
@@ -454,7 +622,7 @@ def test_combined_function_example():
                         ExpressionStatement(
                             AssignmentExpression(
                                 Identifier("z"),
-                                CallExpression(
+                                FunctionCallExpression(
                                     Identifier("multiply"),
                                     [Identifier("z"), NumericLiteral(2)],
                                 ),
@@ -551,7 +719,7 @@ def test_arg_function_type():
                                     ExpressionStatement(
                                         AssignmentExpression(
                                             Identifier("result"),
-                                            CallExpression(
+                                            FunctionCallExpression(
                                                 Identifier("fn"),
                                                 [Identifier("result"), Identifier("x")],
                                             ),
@@ -577,7 +745,7 @@ def test_pipe_expression_single():
     expected = Program(
         [
             ExpressionStatement(
-                CallExpression(
+                FunctionCallExpression(
                     Identifier("map"),
                     [
                         ArrayLiteral(
@@ -599,13 +767,13 @@ def test_pipe_expression_multiple():
     expected = Program(
         [
             ExpressionStatement(
-                CallExpression(
+                FunctionCallExpression(
                     Identifier("reduce"),
                     [
-                        CallExpression(
+                        FunctionCallExpression(
                             Identifier("filter"),
                             [
-                                CallExpression(
+                                FunctionCallExpression(
                                     Identifier("map"),
                                     [
                                         ArrayLiteral(
@@ -642,13 +810,13 @@ def test_complex_pipe_expression():
             VariableDeclaration(
                 "x",
                 ArrayType(PrimitiveType(TokenType.INT)),
-                CallExpression(
+                FunctionCallExpression(
                     Identifier("sum"),
                     [
-                        CallExpression(
+                        FunctionCallExpression(
                             Identifier("map"),
                             [
-                                CallExpression(
+                                FunctionCallExpression(
                                     Identifier("reduce"),
                                     [
                                         ArrayLiteral(

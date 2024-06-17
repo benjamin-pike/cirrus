@@ -8,16 +8,18 @@ from frontend.parser.statements import StatementParser
 
 class Parser(ParserABC):
     """
-    The Parser class is responsible for parsing a list of tokens into an abstract syntax tree (AST).
+    The Parser class is responsible for parsing a list
+    of tokens into an abstract syntax tree (AST).
 
     Attributes:
         tokens (List[Token]): The list of tokens to be parsed.
         pos (int): The current position in the token list.
-        statement_parser (StatementParser): An instance of StatementParser to handle statement parsing.
+        statement_parser (StatementParser):
+            An instance of StatementParser to handle statement parsing.
     """
 
     def __init__(self, tokens: List[Token]) -> None:
-        """Initialises the Parser with a list of tokens and sets up the statement parser.
+        """Initialises the Parser with a token list and creates a statement parser.
 
         Args:
             tokens (List[Token]): The list of tokens to be parsed.
@@ -37,7 +39,8 @@ class Parser(ParserABC):
         return Program(body)
 
     def consume(self, token_type: TokenType) -> Token:
-        """Consumes the current token if it matches the expected type, otherwise raises an error.
+        """Consumes the current token if it matches
+        the expected type, otherwise raises an error.
 
         Args:
             token_type (TokenType): The expected type of the current token.

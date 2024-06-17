@@ -11,10 +11,11 @@ from lib.helpers import is_iterable, pascal_to_snake_case
 
 class SemanticAnalyzer(SemanticAnalyzerABC):
     """
-    The SemanticAnalyzer class performs semantic analysis by traversing the AST and ensuring that:\n
+    The SemanticAnalyzer class performs semantic analysis
+    by traversing the AST and ensuring that:\n
         1) All variables and functions are declared before use.\n
         2) Variables and functions are not redeclared or shadowed in lower scopes.\n
-        3) Types are compatible in function declarations, expressions, and assignments.\n
+        3) Types are compatible in declarations, expressions, and assignments.\n
         4) All code is reachable and flow control statements are used correctly.\n
     """
 
@@ -51,7 +52,8 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
         return analyze(node)
 
     def analyze_generic(self, node: Node) -> VarType:
-        """Called if no explicit analyzer function exists for a node. Recursively analyses children.
+        """Called if no explicit analyzer function exists for a node.
+        Recursively analyses children.
 
         Args:
             node (Node): The AST node to analyse.

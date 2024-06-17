@@ -1,5 +1,4 @@
 [MASTER]
-init-hook='import sys; sys.path.append("src")'
 ignore=setup.py,tests
 
 [MESSAGES CONTROL]
@@ -11,6 +10,8 @@ disable=
     unused-wildcard-import,
     import-self,
     missing-module-docstring,
-    broad-exception-caught
+    broad-exception-caught,
+    super-init-not-called,
+    no-name-in-module
 
-max-line-length=120
+max-line-length=88

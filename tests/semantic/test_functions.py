@@ -59,7 +59,7 @@ def test_invalid_function_call():
         }
         add(5);  // Missing argument
     """
-    with pytest.raises(TypeError, match=r"Function add expects 2 arguments, got 1"):
+    with pytest.raises(TypeError, match=r"Function `add` expects 2 arguments, got 1"):
         analyze_code(code)
 
 
@@ -131,7 +131,7 @@ def test_pipe_expression():
 
         int x = [[1, 2, 3, 4]] >> reduce(add) >> triple >> add;  // Type mismatch
     """
-    with pytest.raises(TypeError, match=r"Function add expects 2 arguments, got 1"):
+    with pytest.raises(TypeError, match=r"Function `add` expects 2 arguments, got 1"):
         analyze_code(code)
 
 
@@ -144,7 +144,7 @@ def test_function_parameter_types():
     """
     with pytest.raises(
         TypeError,
-        match=r"Argument type PrimitiveType\(TokenType.STRING\) does not match parameter type PrimitiveType\(TokenType.INT\)",
+        match=r"Argument type `PrimitiveType\(STRING\)` does not match parameter type `PrimitiveType\(INT\)`",
     ):
         analyze_code(code)
 
@@ -199,3 +199,57 @@ def test_function_with_nested_call():
         int result = square(4);
     """
     analyze_code(code)
+
+
+def test_set_method_call_expression():
+    code = """
+        int{} x = {1, 2, 3};
+        bool y = x.add(4).remove(1).contains(2);
+        int{} z = x.clear();
+    """
+    analyze_code(code)
+
+
+def test_map_method_call_expression():
+    code = """
+        int{string} x = {"a": 1, "b": 2};
+        int y = x.put("c", 3).remove("a").get("b");
+        int{string} z = x.clear();
+    """
+    analyze_code(code)
+
+def test_method_access_on_invalid_type():
+    code = """
+        int x = 5;
+        x.add(4);  // Method call on non-object type
+    """
+    with pytest.raises(TypeError, match=r"Type `PrimitiveType\(INT\)` does not have methods"):
+        analyze_code(code)
+        
+def test_undeclared_method_access():
+    code = """
+        int{} x = {1, 2, 3};
+        x.put(4);  // Method `put` is not defined on type `SetType\(PrimitiveType\(INT\)\)`
+    """
+    with pytest.raises(TypeError, match=r"Method `put` is not defined on type `SetType\(PrimitiveType\(INT\)\)`"):
+        analyze_code(code)
+        
+def test_missing_method_arguments():
+    code = """
+        int{string} x = {"a": 1, "b": 2};
+        x.put("c");  // Missing argument
+    """
+    with pytest.raises(TypeError, match=r"Method `put` expects 2 arguments, got 1"):
+        analyze_code(code)
+        
+def test_invalid_method_argument_types():
+    code = """
+        int{string} x = {"a": 1, "b": 2};
+        x.put(3, "c");  // Type mismatch in method arguments
+    """
+    
+    with pytest.raises(
+        TypeError,
+        match=r"Argument type `PrimitiveType\(INT\)` does not match parameter type `PrimitiveType\(STRING\)`",
+    ):
+        analyze_code(code)

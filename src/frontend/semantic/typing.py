@@ -165,8 +165,8 @@ class ExpressionAnalyzerABC(ABC):
         """Analyze an identifier."""
 
     @abstractmethod
-    def analyze_call_expression(self, node: CallExpression) -> VarType:
-        """Analyze a call expression."""
+    def analyze_function_call_expression(self, node: FunctionCallExpression) -> VarType:
+        """Analyze a function call expression."""
 
     @abstractmethod
     def analyze_array_literal(self, node: ArrayLiteral) -> VarType:
@@ -175,6 +175,14 @@ class ExpressionAnalyzerABC(ABC):
     @abstractmethod
     def analyze_index_expression(self, node: IndexExpression) -> VarType:
         """Analyze an index expression."""
+
+    @abstractmethod
+    def analyze_member_access_expression(self, node: MemberAccessExpression) -> VarType:
+        """Analyze a member access expression."""
+
+    @abstractmethod
+    def analyze_method_call_expression(self, node: MethodCallExpression) -> VarType:
+        """Analyze a method call expression."""
 
     @abstractmethod
     def _is_assignable(self, node: Expression) -> bool:
