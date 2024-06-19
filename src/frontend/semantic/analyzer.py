@@ -21,7 +21,7 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
 
     def __init__(self) -> None:
         self.symbol_table = SymbolTable()
-        self.statement_analzyer = StatementAnalyzer(self)
+        self.statement_analyzer = StatementAnalyzer(self)
         self.expression_analyzer = ExpressionAnalyzer(self)
 
     def analyze(self, node: Node) -> VarType:
@@ -43,7 +43,7 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
 
         analyzer = self
         if isinstance(node, Statement):
-            analyzer = self.statement_analzyer
+            analyzer = self.statement_analyzer
         elif isinstance(node, Expression):
             analyzer = self.expression_analyzer
 

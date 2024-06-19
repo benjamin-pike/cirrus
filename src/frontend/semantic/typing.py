@@ -15,7 +15,7 @@ class ScopeABC(Protocol):
     """Abstract class for symbol table scopes."""
 
     symbols: Dict[str, SymbolABC]
-    parent_node: Optional[Statement]
+    parent_node: Optional[Node]
     reachable: bool
 
 
@@ -25,7 +25,7 @@ class SymbolTableABC(ABC):
     scopes: List[ScopeABC]
 
     @abstractmethod
-    def enter_scope(self, parent_node: Optional[Statement] = None) -> None:
+    def enter_scope(self, parent_node: Optional[Node] = None) -> None:
         """Push a new scope onto the stack."""
 
     @abstractmethod
@@ -59,74 +59,6 @@ class SymbolTableABC(ABC):
     @abstractmethod
     def set_unreachable(self) -> None:
         """Set the current scope to unreachable."""
-
-
-class SemanticAnalyzerABC(ABC):
-    """Abstract class for the semantic analyzer."""
-
-    symbol_table: SymbolTableABC
-
-    @abstractmethod
-    def analyze(self, node: Node) -> VarType:
-        """Analyze a node in the AST."""
-
-    @abstractmethod
-    def analyze_generic(self, node: Node) -> VarType:
-        """Analyze a node of an unknown type."""
-
-    @abstractmethod
-    def analyze_program(self, node: Program) -> VoidType:
-        """Analyze a program node."""
-
-
-class StatementAnalyzerABC(ABC):
-    """Abstract class for the statement analyzer."""
-
-    @abstractmethod
-    def analyze_variable_declaration(self, node: VariableDeclaration) -> VarType:
-        """Analyze a variable declaration statement."""
-
-    @abstractmethod
-    def analyze_function_declaration(self, node: FunctionDeclaration) -> VarType:
-        """Analyze a function declaration statement."""
-
-    @abstractmethod
-    def analyze_block_statement(
-        self, node: BlockStatement, new_scope: bool = True
-    ) -> VoidType:
-        """Analyze a block statement."""
-
-    @abstractmethod
-    def analyze_if_statement(self, node: IfStatement) -> VoidType:
-        """Analyze an if statement."""
-
-    @abstractmethod
-    def analyze_while_statement(self, node: WhileStatement) -> VoidType:
-        """Analyze a while statement."""
-
-    @abstractmethod
-    def analyze_range_statement(self, node: RangeStatement) -> VoidType:
-        """Analyze a range statement."""
-
-    @abstractmethod
-    def analyze_each_statement(self, node: EachStatement) -> VoidType:
-        """Analyze an each statement."""
-
-    @abstractmethod
-    def analyze_halt_statement(self, node: HaltStatement) -> VoidType:
-        """Analyze a halt statement."""
-
-    @abstractmethod
-    def analyze_skip_statement(self, node: SkipStatement) -> VoidType:
-        """Analyze a skip statement."""
-
-    @abstractmethod
-    def analyze_echo_statement(self, node: EchoStatement) -> VoidType:
-        """Analyze an echo statement."""
-
-    @abstractmethod
-    def analyze_return_statement(self, node: ReturnStatement) -> VarType:
-        """Analyze a return statement."""
 
 
 class ExpressionAnalyzerABC(ABC):
@@ -187,3 +119,81 @@ class ExpressionAnalyzerABC(ABC):
     @abstractmethod
     def _is_assignable(self, node: Expression) -> bool:
         """Check if an expression is assignable."""
+
+
+class StatementAnalyzerABC(ABC):
+    """Abstract class for the statement analyzer."""
+
+    @abstractmethod
+    def analyze_variable_declaration(self, node: VariableDeclaration) -> VarType:
+        """Analyze a variable declaration statement."""
+
+    @abstractmethod
+    def analyze_function_declaration(self, node: FunctionDeclaration) -> FunctionType:
+        """Analyze a function declaration statement."""
+
+    @abstractmethod
+    def analyze_template_declaration(self, node: TemplateDeclaration) -> VarType:
+        """Analyses a TemplateDeclaration statement."""
+
+    @abstractmethod
+    def analyze_block_statement(
+        self, node: BlockStatement, new_scope: bool = True
+    ) -> VoidType:
+        """Analyze a block statement."""
+
+    @abstractmethod
+    def analyze_if_statement(self, node: IfStatement) -> VoidType:
+        """Analyze an if statement."""
+
+    @abstractmethod
+    def analyze_while_statement(self, node: WhileStatement) -> VoidType:
+        """Analyze a while statement."""
+
+    @abstractmethod
+    def analyze_range_statement(self, node: RangeStatement) -> VoidType:
+        """Analyze a range statement."""
+
+    @abstractmethod
+    def analyze_each_statement(self, node: EachStatement) -> VoidType:
+        """Analyze an each statement."""
+
+    @abstractmethod
+    def analyze_halt_statement(self, node: HaltStatement) -> VoidType:
+        """Analyze a halt statement."""
+
+    @abstractmethod
+    def analyze_skip_statement(self, node: SkipStatement) -> VoidType:
+        """Analyze a skip statement."""
+
+    @abstractmethod
+    def analyze_echo_statement(self, node: EchoStatement) -> VoidType:
+        """Analyze an echo statement."""
+
+    @abstractmethod
+    def analyze_return_statement(self, node: ReturnStatement) -> VarType:
+        """Analyze a return statement."""
+
+    @abstractmethod
+    def get_return_type(self, node: ReturnStatement) -> VarType:
+        """Get the return type of a return statement."""
+
+
+class SemanticAnalyzerABC(ABC):
+    """Abstract class for the semantic analyzer."""
+
+    symbol_table: SymbolTableABC
+    statement_analyzer: StatementAnalyzerABC
+    expression_analyzer: ExpressionAnalyzerABC
+
+    @abstractmethod
+    def analyze(self, node: Node) -> VarType:
+        """Analyze a node in the AST."""
+
+    @abstractmethod
+    def analyze_generic(self, node: Node) -> VarType:
+        """Analyze a node of an unknown type."""
+
+    @abstractmethod
+    def analyze_program(self, node: Program) -> VoidType:
+        """Analyze a program node."""

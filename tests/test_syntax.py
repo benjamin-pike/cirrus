@@ -103,7 +103,7 @@ def test_invalid_set_literal():
     
 
 def test_invalid_map_literal():
-    code = "int{string} x = {'a': 1, 'b', 'c': 3};"
+    code = "int{str} x = {'a': 1, 'b', 'c': 3};"
     check(code, "Expected token TokenType.COLON, but got TokenType.COMMA")
 
 
@@ -138,5 +138,5 @@ def test_extra_comma_in_function_call():
 
 
 def test_invalid_range_statement():
-    code = "range x in 0 to 10 step 2 { return x; }"
-    check(code, "Expected token TokenType.LBRACE, but got TokenType.IDENTIFIER")
+    code = "range (x in 0 to 10 step 2) { return x; }"
+    check(code, "Expected token TokenType.RPAREN, but got TokenType.IDENTIFIER")

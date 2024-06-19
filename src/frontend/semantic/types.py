@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Dict
 from frontend.lexer.tokens import TokenType
 
 
@@ -81,7 +81,10 @@ class ArrayType(VarType):
         return f"ArrayType({self.element_type})"
 
     def __eq__(self, other: Any) -> bool:
-        return isinstance(other, ArrayType) and self.element_type == other.element_type
+        return isinstance(other, ArrayType) and (
+            (self.element_type == other.element_type)
+            or (self.element_type == VoidType() or other.element_type == VoidType())
+        )
 
     def __hash__(self) -> int:
         return hash(self.__repr__())
@@ -110,7 +113,10 @@ class SetType(VarType):
         return f"SetType({self.element_type})"
 
     def __eq__(self, other: Any) -> bool:
-        return isinstance(other, SetType) and self.element_type == other.element_type
+        return isinstance(other, SetType) and (
+            (self.element_type == other.element_type)
+            or (self.element_type == VoidType() or other.element_type == VoidType())
+        )
 
     def __hash__(self) -> int:
         return hash(self.__repr__())
@@ -141,11 +147,77 @@ class MapType(VarType):
         return f"MapType({self.key_type}, {self.value_type})"
 
     def __eq__(self, other: Any) -> bool:
-        return (
-            isinstance(other, MapType)
-            and self.key_type == other.key_type
-            and self.value_type == other.value_type
+        return isinstance(other, MapType) and (
+            (self.key_type == other.key_type and self.value_type == other.value_type)
+            or (
+                (self.key_type == VoidType() and self.value_type == VoidType())
+                or (other.key_type == VoidType() and other.value_type == VoidType())
+            )
         )
+
+    def __hash__(self) -> int:
+        return hash(self.__repr__())
+
+
+class CustomType(VarType):
+    """Represents template identifiers
+
+    Args:
+        name (str): The name of the template
+    """
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def __repr__(self):
+        return f"CustomType({self.name})"
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, TemplateType):
+            return self.name == other.identifier.name
+
+        return isinstance(other, CustomType) and self.name == other.name
+
+    def __hash__(self) -> int:
+        return hash(self.__repr__())
+
+
+class TemplateType(VarType):
+    """Represents template types
+
+    Args:
+        attributes (List[Tuple[str, VarType]]): The attributes of the template
+        methods (Dict[str, FunctionType]): The methods of the template
+    """
+
+    def __init__(
+        self,
+        identifier: CustomType,
+        attributes: Dict[str, VarType],
+        methods: Dict[str, FunctionType],
+    ):
+        self.identifier = identifier
+        self.attributes = attributes
+        self.methods = methods
+
+    def __repr__(self):
+        return f"TemplateType({self.identifier}, {self.attributes}, {self.methods})"
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, CustomType):
+            return self.identifier.name == other.name
+
+        if isinstance(other, TemplateType):
+            attributes_match = all(
+                a == b
+                for a, b in zip(self.attributes.items(), other.attributes.items())
+            )
+            methods_match = all(
+                a == b for a, b in zip(self.methods.items(), other.methods.items())
+            )
+            return attributes_match and methods_match
+
+        return False
 
     def __hash__(self) -> int:
         return hash(self.__repr__())

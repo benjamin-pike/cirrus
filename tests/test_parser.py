@@ -66,7 +66,7 @@ def test_echo_statement():
 
 def test_if_statement():
     code = """
-        if x > 5 {
+        if (x > 5) {
             return x;
         } else {
             return 5;
@@ -87,8 +87,8 @@ def test_if_statement():
 def test_nested_if_else():
     code = """
         bool is_true = true;
-        if x > 5 {
-            if is_true {
+        if (x > 5) {
+            if (is_true) {
                 return y;
             } else {
                 return x;
@@ -270,13 +270,13 @@ def test_set_literal():
 
 def test_map_literal():
     code = """
-        int{string} x = {"a": 1, "b": 2};
+        int{str} x = {"a": 1, "b": 2};
     """
     expected = Program(
         [
             VariableDeclaration(
                 "x",
-                MapType(PrimitiveType(TokenType.STRING), PrimitiveType(TokenType.INT)),
+                MapType(PrimitiveType(TokenType.STR), PrimitiveType(TokenType.INT)),
                 MapLiteral(
                     [
                         (StringLiteral("a"), NumericLiteral(1)),
@@ -318,7 +318,7 @@ def test_set_method_call():
 
 def test_map_method_call():
     code = """
-        int{string} y = {"a": 1, "b": 2};
+        int{str} y = {"a": 1, "b": 2};
         int b = y.set("c", 3).remove("a").get("b");
         y.clear();
     """
@@ -326,7 +326,7 @@ def test_map_method_call():
         [
             VariableDeclaration(
                 "y",
-                MapType(PrimitiveType(TokenType.STRING), PrimitiveType(TokenType.INT)),
+                MapType(PrimitiveType(TokenType.STR), PrimitiveType(TokenType.INT)),
                 MapLiteral(
                     [
                         (StringLiteral("a"), NumericLiteral(1)),
@@ -362,7 +362,7 @@ def test_map_method_call():
 def test_complex_collection_type():
     code = """
         // Array of array of maps with int set keys and string values
-        string{int{}}[][] x = [[{{1, 2, 3}: 'hello', {4, 5, 6}: 'world'}]];
+        str{int{}}[][] x = [[{{1, 2, 3}: 'hello', {4, 5, 6}: 'world'}]];
     """
     expected = Program(
         [
@@ -372,7 +372,7 @@ def test_complex_collection_type():
                     ArrayType(
                         MapType(
                             SetType(PrimitiveType(TokenType.INT)),
-                            PrimitiveType(TokenType.STRING),
+                            PrimitiveType(TokenType.STR),
                         ),
                     )
                 ),
@@ -441,7 +441,7 @@ def test_while_statement():
 
 def test_each_statement():
     code = """
-        each x in [1, 2, 3] {
+        each (x in [1, 2, 3]) {
             return x;
         }
     """
@@ -460,7 +460,7 @@ def test_each_statement():
 
 def test_range_statement():
     code = """
-        range x in 0 to 10 {
+        range (x in 0 to 10) {
             return x;
         }
     """
@@ -480,8 +480,8 @@ def test_range_statement():
 
 def test_halt_statement():
     code = """
-        range x in 0 to 10 {
-            if x == 5 {
+        range (x in 0 to 10) {
+            if (x == 5) {
                 halt;
             }
         }
@@ -512,8 +512,8 @@ def test_halt_statement():
 
 def test_skip_statement():
     code = """
-        each x in [1, 2, 3, 4] {
-            if isEven(x) {
+        each (x in [1, 2, 3, 4]) {
+            if (isEven(x)) {
                 skip;
             }
         }
@@ -660,7 +660,7 @@ def test_arg_function_type():
 
         func reduce -> int = [int[] arr, func<int, [int a, int b]> fn] >> {
             int result = 0;
-            each x in arr {
+            each (x in arr) {
                 result = fn(result, x);
             }
             return result;
@@ -852,6 +852,66 @@ def test_comments():
         [
             VariableDeclaration("x", PrimitiveType(TokenType.INT), NumericLiteral(5)),
             EchoStatement(StringLiteral("This should be included")),
+        ]
+    )
+    check(code, expected)
+
+
+def test_template_declaration():
+    code = """
+        template Person = {
+            str name;
+            int age;
+            
+            func greet -> void = [str greeting] >> {
+                echo greeting;
+            }
+        };
+    """
+    expected = Program(
+        [
+            TemplateDeclaration(
+                "Person",
+                {
+                    "name": PrimitiveType(TokenType.STR),
+                    "age": PrimitiveType(TokenType.INT),
+                },
+                {
+                    "greet": FunctionDeclaration(
+                        "greet",
+                        FunctionType(
+                            PrimitiveType(TokenType.VOID),
+                            [("greeting", PrimitiveType(TokenType.STR))],
+                        ),
+                        BlockStatement([EchoStatement(Identifier("greeting"))]),
+                    ),
+                },
+            )
+        ]
+    )
+    check(code, expected)
+
+
+def test_entity_declaration():
+    code = """
+        entity character = Person{
+            name: 'Alice',
+            age: 25
+        };
+    """
+    expected = Program(
+        [
+            VariableDeclaration(
+                "character",
+                CustomType("Person"),
+                EntityLiteral(
+                    CustomType("Person"),
+                    {
+                        "name": StringLiteral("Alice"),
+                        "age": NumericLiteral(25)
+                    },
+                ),
+            )
         ]
     )
     check(code, expected)

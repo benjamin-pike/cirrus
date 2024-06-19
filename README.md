@@ -56,7 +56,7 @@ python setup.py
 ### Variable Declarations
 ```
 int x = 10;
-string y = 'Hello, World!';
+str y = 'Hello, World!';
 bool z = true;
 ```
 
@@ -67,6 +67,30 @@ func add -> int = [int a, int b] >> {
 }
 ```
 
+### Templates and Entities
+```
+template User {
+    str name;
+    int age;
+    User[] followers;
+
+    func poke -> void = [] >> {
+        echo 'Poked ' + name;
+    } 
+}
+
+entity user = User{
+    name: 'James',
+    age: 25,
+    followers: [
+        User{name: 'Alice', age: 30, followers: []},
+        User{name: 'Bob', age: 28, followers: []}
+    ]
+};
+
+user.poke();
+```
+
 ### Array Methods and Chaining
 ```
 int[] numbers = [1, 2, 3, 4, 5];
@@ -75,7 +99,7 @@ int result = numbers >> map(double) >> reduce(add)
 
 ### Conditional Statements
 ```
-if x > 10 {
+if (x > 10) {
     echo 'Greater than 10';
 } else {
     echo 'Less than or equal to 10';
@@ -85,17 +109,17 @@ if x > 10 {
 ### Loops
 ```
 // Each loop
-each element in numbers {
+each (element in numbers) {
     echo element;
 }
 
 // Range loop
-range i in 0 to 10 {
+range (i in 0 to 10) {
     echo i;
 }
 
 // While loop
-while x < 10 {
+while (x < 10) {
     x++;
 }
 ```
