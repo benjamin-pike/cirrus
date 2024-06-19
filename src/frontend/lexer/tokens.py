@@ -22,10 +22,12 @@ class TokenType(Enum):
     INT = auto()  # "int"
     FLOAT = auto()  # "float"
     BOOL = auto()  # "bool"
-    STRING = auto()  # "string"
+    STR = auto()  # "str"
     NULL = auto()  # "null"
     INFER = auto()  # "infer"
     VOID = auto()  # "void"
+    TEMPLATE = auto()  # "template"
+    ENTITY = auto()  # "entity"
 
     # Identifiers
     IDENTIFIER = auto()
@@ -48,7 +50,7 @@ class TokenType(Enum):
     # Literals
     INT_LITERAL = auto()
     FLOAT_LITERAL = auto()
-    BOOL_LITERAL = auto()
+    BOOLEAN_LITERAL = auto()
     NULL_LITERAL = auto()
     STRING_LITERAL = auto()
 
@@ -117,9 +119,11 @@ spec = (
     (TokenType.INT, r"\bint\b"),
     (TokenType.FLOAT, r"\bfloat\b"),
     (TokenType.BOOL, r"\bbool\b"),
-    (TokenType.STRING, r"\bstring\b"),
+    (TokenType.STR, r"\bstr\b"),
     (TokenType.INFER, r"\binfer\b"),
     (TokenType.VOID, r"\bvoid\b"),
+    (TokenType.TEMPLATE, r"\btemplate\b"),
+    (TokenType.ENTITY, r"\bentity\b"),
     (TokenType.LPAREN, r"\("),
     (TokenType.RPAREN, r"\)"),
     (TokenType.LBRACE, r"\{"),
@@ -154,7 +158,7 @@ spec = (
     (TokenType.MINUS, r"-"),
     (TokenType.MULTIPLY, r"\*"),
     (TokenType.DIVIDE, r"/"),
-    (TokenType.BOOL_LITERAL, r"\btrue\b|\bfalse\b"),
+    (TokenType.BOOLEAN_LITERAL, r"\btrue\b|\bfalse\b"),
     (TokenType.NULL_LITERAL, r"\bnull\b"),
     (TokenType.FLOAT_LITERAL, r"\d+\.\d+"),
     (TokenType.INT_LITERAL, r"\d+"),

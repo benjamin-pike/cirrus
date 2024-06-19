@@ -2,32 +2,8 @@ from typing import List, Tuple
 from frontend.parser.typing import ParserABC, StatementParserABC
 from frontend.parser.expressions import ExpressionParser
 from frontend.lexer.tokens import TokenType
-from frontend.semantic.types import (
-    ArrayType,
-    FunctionType,
-    InferType,
-    PrimitiveType,
-    VarType,
-    VoidType,
-    SetType,
-    MapType,
-)
-from frontend.syntax.ast import (
-    EchoStatement,
-    HaltStatement,
-    SkipStatement,
-    Statement,
-    ExpressionStatement,
-    VariableDeclaration,
-    BlockStatement,
-    IfStatement,
-    WhileStatement,
-    RangeStatement,
-    EachStatement,
-    ReturnStatement,
-    FunctionDeclaration,
-    NumericLiteral,
-)
+from frontend.semantic.types import *
+from frontend.syntax.ast import *
 
 
 class StatementParser(StatementParserABC):
@@ -75,11 +51,13 @@ class StatementParser(StatementParserABC):
             case (
                 TokenType.INT
                 | TokenType.FLOAT
-                | TokenType.STRING
+                | TokenType.STR
                 | TokenType.BOOL
                 | TokenType.INFER
             ):
                 return self.parse_variable_declaration()
+            case TokenType.ENTITY:
+                return self.parse_entity_declaration()
             case TokenType.LBRACE:
                 return self.parse_block_statement()
             case TokenType.IF:
@@ -100,6 +78,8 @@ class StatementParser(StatementParserABC):
                 return self.parse_return_statement()
             case TokenType.ECHO:
                 return self.parse_echo_statement()
+            case TokenType.TEMPLATE:
+                return self.parse_template_declaration()
             case _:
                 # Default to parsing an expression statement
                 return self.parse_expression_statement()
@@ -121,14 +101,37 @@ class StatementParser(StatementParserABC):
         Returns:
             VariableDeclaration: The parsed variable declaration.
         """
-
-        var_type = self._parse_var_type()
+        var_type = self.parser.parse_var_type()
         name = self.parser.consume(TokenType.IDENTIFIER)
         self.parser.consume(TokenType.ASSIGN)
         initializer = self.expression_parser.parse_expression()
         self.parser.consume(TokenType.SEMICOLON)
 
         return VariableDeclaration(name.value, var_type, initializer)
+
+    def parse_entity_declaration(self) -> VariableDeclaration:
+        """Parses an entity declaration statement.
+
+        Returns:
+            VariableDeclaration: The parsed entity declaration.
+
+        Raises:
+            SyntaxError: If the template identifier is not found.
+        """
+        self.parser.consume(TokenType.ENTITY)
+        name = self.parser.consume(TokenType.IDENTIFIER)
+        self.parser.consume(TokenType.ASSIGN)
+
+        if not self.parser.current().token_type == TokenType.IDENTIFIER:
+            raise SyntaxError(
+                f"Expected template identifier, got {self.parser.current().value}"
+            )
+
+        template = self.parser.consume(TokenType.IDENTIFIER).value
+        initializer = self.expression_parser.parse_entity_literal(template)
+        self.parser.consume(TokenType.SEMICOLON)
+
+        return VariableDeclaration(name.value, CustomType(template), initializer)
 
     def parse_block_statement(self) -> BlockStatement:
         """Parses a block statement.
@@ -156,7 +159,9 @@ class StatementParser(StatementParserABC):
             IfStatement: The parsed if statement.
         """
         self.parser.consume(TokenType.IF)
+        self.parser.consume(TokenType.LPAREN)
         condition = self.expression_parser.parse_expression()
+        self.parser.consume(TokenType.RPAREN)
         then_block = self.parse_block_statement()
 
         if self.parser.current().token_type == TokenType.ELSE:
@@ -174,7 +179,9 @@ class StatementParser(StatementParserABC):
             WhileStatement: The parsed while statement.
         """
         self.parser.consume(TokenType.WHILE)
+        self.parser.consume(TokenType.LPAREN)
         condition = self.expression_parser.parse_expression()
+        self.parser.consume(TokenType.RPAREN)
         body = self.parse_block_statement()
 
         return WhileStatement(condition, body)
@@ -186,6 +193,7 @@ class StatementParser(StatementParserABC):
             RangeStatement: The parsed range statement.
         """
         self.parser.consume(TokenType.RANGE)
+        self.parser.consume(TokenType.LPAREN)
         identifier = self.parser.consume(TokenType.IDENTIFIER)
         self.parser.consume(TokenType.IN)
         start = self.expression_parser.parse_expression()
@@ -198,6 +206,8 @@ class StatementParser(StatementParserABC):
         else:
             increment = NumericLiteral(1)
 
+        self.parser.consume(TokenType.RPAREN)
+
         body = self.parse_block_statement()
 
         return RangeStatement(identifier.value, start, end, increment, body)
@@ -209,9 +219,11 @@ class StatementParser(StatementParserABC):
             EachStatement: The parsed each statement.
         """
         self.parser.consume(TokenType.EACH)
+        self.parser.consume(TokenType.LPAREN)
         identifier = self.parser.consume(TokenType.IDENTIFIER)
         self.parser.consume(TokenType.IN)
         iterable = self.expression_parser.parse_expression()
+        self.parser.consume(TokenType.RPAREN)
         body = self.parse_block_statement()
 
         return EachStatement(identifier.value, iterable, body)
@@ -263,19 +275,19 @@ class StatementParser(StatementParserABC):
         self.parser.consume(TokenType.FUNC)
         name = self.parser.consume(TokenType.IDENTIFIER)
         self.parser.consume(TokenType.RETURN_ARROW)
-        return_type = self._parse_return_type()
+        return_type = self.parser.parse_return_type()
         self.parser.consume(TokenType.ASSIGN)
         self.parser.consume(TokenType.LBRACKET)
 
         parameters: List[Tuple[str, VarType]] = []
         if self.parser.current().token_type != TokenType.RBRACKET:
-            var_type = self._parse_var_type()
+            var_type = self.parser.parse_var_type()
             identifier = self.parser.consume(TokenType.IDENTIFIER).value
             parameters.append((identifier, var_type))
 
             while self.parser.current().token_type == TokenType.COMMA:
                 self.parser.consume(TokenType.COMMA)
-                var_type = self._parse_var_type()
+                var_type = self.parser.parse_var_type()
                 identifier = self.parser.consume(TokenType.IDENTIFIER).value
                 parameters.append((identifier, var_type))
 
@@ -299,113 +311,30 @@ class StatementParser(StatementParserABC):
 
         return EchoStatement(expr)
 
-    def _parse_var_type(self) -> VarType:
-        """Parses a variable type.
-        Delegates to _parse_function_type if the `func` keyword is encountered.
+    def parse_template_declaration(self) -> TemplateDeclaration:
+        """Parses a template declaration statement.
 
         Returns:
-            VarType: The parsed variable type.
+            TemplateDeclaration: The parsed template declaration.
         """
+        self.parser.consume(TokenType.TEMPLATE)
+        name = self.parser.consume(TokenType.IDENTIFIER)
+        self.parser.consume(TokenType.ASSIGN)
+        self.parser.consume(TokenType.LBRACE)
 
-        if self.parser.current().token_type == TokenType.FUNC:
-            return self._parse_function_type()
-
-        match self.parser.current().token_type:
-            case TokenType.INT:
-                var_type = PrimitiveType(self.parser.consume(TokenType.INT).token_type)
-            case TokenType.FLOAT:
-                var_type = PrimitiveType(
-                    self.parser.consume(TokenType.FLOAT).token_type
-                )
-            case TokenType.STRING:
-                var_type = PrimitiveType(
-                    self.parser.consume(TokenType.STRING).token_type
-                )
-            case TokenType.BOOL:
-                var_type = PrimitiveType(self.parser.consume(TokenType.BOOL).token_type)
-            case TokenType.INFER:
-                var_type = InferType()
-                self.parser.consume(TokenType.INFER)
-
-            case _:
-                raise SyntaxError(f"Unexpected token {self.parser.current()}")
-
-        while self.parser.current().token_type in (
-            TokenType.LBRACKET,
-            TokenType.LBRACE,
-        ):
-            if self.parser.current().token_type == TokenType.LBRACKET:
-                var_type = self._parse_array_type(var_type)
-            if self.parser.current().token_type == TokenType.LBRACE:
-                var_type = self._parse_set_or_map_type(var_type)
-
-        return var_type
-
-    def _parse_array_type(self, var_type: VarType) -> VarType:
-        new_type = var_type
-
-        while self.parser.current().token_type == TokenType.LBRACKET:
-            self.parser.consume(TokenType.LBRACKET)
-            self.parser.consume(TokenType.RBRACKET)
-
-            new_type = ArrayType(new_type)
-
-        return new_type
-
-    def _parse_set_or_map_type(self, var_type: VarType) -> VarType:
-        new_type = var_type
-
-        while self.parser.current().token_type == TokenType.LBRACE:
-            self.parser.consume(TokenType.LBRACE)
-            if self.parser.current().token_type == TokenType.RBRACE:
-                self.parser.consume(TokenType.RBRACE)
-
-                new_type = SetType(var_type)
+        attributes: Dict[str, VarType] = {}
+        methods: Dict[str, FunctionDeclaration] = {}
+        while self.parser.current().token_type != TokenType.RBRACE:
+            if self.parser.current().token_type == TokenType.FUNC:
+                func = self.parse_function_declaration()
+                methods[func.name] = func
             else:
-                key_type = self._parse_var_type()
-                self.parser.consume(TokenType.RBRACE)
+                var_type = self.parser.parse_var_type()
+                identifier = self.parser.consume(TokenType.IDENTIFIER).value
+                self.parser.consume(TokenType.SEMICOLON)
+                attributes[identifier] = var_type
 
-                new_type = MapType(key_type, var_type)
+        self.parser.consume(TokenType.RBRACE)
+        self.parser.consume(TokenType.SEMICOLON)
 
-        return new_type
-
-    def _parse_return_type(self) -> VarType:
-        """Parses a return type for a function declaration.
-        Extends the _parse_var_type method to handle the `void` keyword.
-
-        Returns:
-            VarType: The parsed return type.
-        """
-        if self.parser.current().token_type == TokenType.VOID:
-            self.parser.consume(TokenType.VOID)
-            return VoidType()
-
-        return self._parse_var_type()
-
-    def _parse_function_type(self) -> FunctionType:
-        """Parses a function type.
-
-        Returns:
-            FunctionType: The parsed function type.
-        """
-        self.parser.consume(TokenType.FUNC)
-        self.parser.consume(TokenType.LT)
-
-        return_type = self._parse_return_type()
-
-        self.parser.consume(TokenType.COMMA)
-        self.parser.consume(TokenType.LBRACKET)
-
-        parameters: List[Tuple[str, VarType]] = []
-        while self.parser.current().token_type != TokenType.RBRACKET:
-            var_type = self._parse_var_type()
-            identifier = self.parser.consume(TokenType.IDENTIFIER).value
-            parameters.append((identifier, var_type))
-
-            if self.parser.current().token_type == TokenType.COMMA:
-                self.parser.consume(TokenType.COMMA)
-
-        self.parser.consume(TokenType.RBRACKET)
-        self.parser.consume(TokenType.GT)
-
-        return FunctionType(return_type, parameters)
+        return TemplateDeclaration(name.value, attributes, methods)

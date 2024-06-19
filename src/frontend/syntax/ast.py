@@ -1,7 +1,7 @@
 from typing import List, Optional, Union, Literal, Tuple
 from abc import ABC
 from frontend.lexer.tokens import TokenType
-from frontend.semantic.types import FunctionType, VarType
+from frontend.semantic.types import *
 
 
 class Node(ABC):
@@ -331,6 +331,42 @@ class EchoStatement(Statement):
         return f"EchoStatement({self.expression})"
 
 
+class TemplateDeclaration(Statement):
+    """Node representing a template declaration.
+
+    Args:
+        name (str): The name of the template.
+        attributes (List[Tuple[str, VarType]]): The attributes of the template.
+        methods (List[FunctionDeclaration]): The methods of the template.
+
+    Syntax:
+        template <name> = { <attributes> <methods> }
+
+    Example:
+        template Person = {
+            str name;
+            int age;
+
+            func greet -> void = [] >> {
+                echo "Hello!";
+            }
+        }
+    """
+
+    def __init__(
+        self,
+        name: str,
+        attributes: Dict[str, VarType],
+        methods: Dict[str, FunctionDeclaration],
+    ) -> None:
+        self.name = name
+        self.attributes = attributes
+        self.methods = methods
+
+    def __repr__(self) -> str:
+        return f"TemplateDeclaration({self.name}, {self.attributes}, {self.methods})"
+
+
 # Expressions
 class NumericLiteral(Expression):
     """Node representing a numeric literal.
@@ -426,6 +462,22 @@ class MapLiteral(Expression):
         return f"MapLiteral({self.elements})"
 
 
+class EntityLiteral(Expression):
+    """Node representing an entity literal.
+
+    Args:
+        template (str): The template of the entity.
+        elements (Dict[str, Expression]]): The elements of the entity.
+    """
+
+    def __init__(self, template: CustomType, attributes: Dict[str, Expression]) -> None:
+        self.template = template
+        self.attributes = attributes
+
+    def __repr__(self) -> str:
+        return f"EntityLiteral({self.template}, {self.attributes})"
+
+
 class Identifier(Expression):
     """Node representing an identifier.
 
@@ -510,6 +562,24 @@ class IndexExpression(Expression):
         return f"IndexExpression({self.array}, {self.index})"
 
 
+class FunctionLiteral(Expression):
+    """Node representing an function literal.
+
+    Args:
+        parameters (List[Tuple[str, VarType]]): The parameters of the function.
+        body (BlockStatement): The block to be executed when the function is called.
+    """
+
+    def __init__(
+        self, parameters: List[Tuple[str, VarType]], body: BlockStatement
+    ) -> None:
+        self.parameters = parameters
+        self.body = body
+
+    def __repr__(self) -> str:
+        return f"FunctionLiteral({self.parameters}, {self.body})"
+
+
 class FunctionCallExpression(Expression):
     """Node representing a function call expression.
 
@@ -530,7 +600,7 @@ class MemberAccessExpression(Expression):
     """Node representing a member access expression.
 
     Args:
-        object (Expression): The object to access the member from.
+        obj (Expression): The object to access the member from.
         member (Identifier): The member to be accessed.
     """
 

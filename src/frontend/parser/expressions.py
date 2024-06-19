@@ -32,40 +32,10 @@ class ExpressionParser(ExpressionParserABC):
             return self.parse_array_literal()
         if self.parser.current().token_type == TokenType.LBRACE:
             return self.parse_set_literal()
+        if self.parser.current().token_type == TokenType.FUNC:
+            return self.parse_function_literal()
 
         return self.parse_assignment_expression()
-
-    def parse_pipe_expression(self, args: List[Expression]) -> Expression:
-        """Parses a pipe expression beginning with a parameter list.
-
-        Args:
-            args (List[Expression]):
-                The list of args to be passed to the first function.
-
-        Returns:
-            Expression: The parsed pipe expression.
-        """
-        call: Optional[FunctionCallExpression] = None
-
-        while (
-            not self.parser.is_eof()
-            and self.parser.current().token_type == TokenType.ARROW
-        ):
-            self.parser.consume(TokenType.ARROW)
-            identifier = self.parser.consume(TokenType.IDENTIFIER).value
-            new_args: List[Expression] = [call] if call else args
-
-            if self.parser.current().token_type == TokenType.LPAREN:
-                self.parser.consume(TokenType.LPAREN)
-                new_args.extend(self.parse_arguments())
-                self.parser.consume(TokenType.RPAREN)
-
-            call = FunctionCallExpression(Identifier(identifier), new_args)
-
-        if call is None:
-            return ArrayLiteral(args)
-
-        return call
 
     def parse_assignment_expression(self) -> Expression:
         """Parses an assignment expression.
@@ -183,8 +153,8 @@ class ExpressionParser(ExpressionParserABC):
                 str_token = self.parser.consume(TokenType.STRING_LITERAL)
                 self.parser.consume(token.token_type)
                 return StringLiteral(str_token.value)
-            case TokenType.BOOL_LITERAL:
-                self.parser.consume(TokenType.BOOL_LITERAL)
+            case TokenType.BOOLEAN_LITERAL:
+                self.parser.consume(TokenType.BOOLEAN_LITERAL)
                 return BooleanLiteral(token.value == "true")
 
             case TokenType.LPAREN:
@@ -215,7 +185,33 @@ class ExpressionParser(ExpressionParserABC):
         """
         identifier = self.parser.consume(TokenType.IDENTIFIER).value
         expr = Identifier(identifier)
+        if self.parser.current().token_type == TokenType.LBRACE:
+            return self.parse_entity_literal(identifier)
         return self.parse_postfix_expression(expr)
+
+    def parse_function_literal(self) -> FunctionLiteral:
+        """Parses a function expression
+        Delegates to parse_array_literal if a type followed by an expression is present.
+
+        Returns:
+            Expression: The parsed function expression.
+        """
+        self.parser.consume(TokenType.FUNC)
+        self.parser.consume(TokenType.LBRACKET)
+
+        parameters: List[Tuple[str, VarType]] = []
+        while self.parser.current().token_type != TokenType.RBRACKET:
+            var_type = self.parser.parse_var_type()
+            name = self.parser.consume(TokenType.IDENTIFIER).value
+            parameters.append((name, var_type))
+            if self.parser.current().token_type == TokenType.COMMA:
+                self.parser.consume(TokenType.COMMA)
+
+        self.parser.consume(TokenType.RBRACKET)
+        self.parser.consume(TokenType.ARROW)
+        body = self.parser.statement_parser.parse_block_statement()
+
+        return FunctionLiteral(parameters, body)
 
     def parse_function_call_expression(
         self, callee: Expression
@@ -315,6 +311,23 @@ class ExpressionParser(ExpressionParserABC):
 
         return MapLiteral(elements)
 
+    def parse_entity_literal(self, template: str) -> Expression:
+        self.parser.consume(TokenType.LBRACE)
+
+        attributes: Dict[str, Expression] = {}
+        while self.parser.current().token_type != TokenType.RBRACE:
+            member = self.parser.consume(TokenType.IDENTIFIER)
+            self.parser.consume(TokenType.COLON)
+            initializer = self.parse_expression()
+            if self.parser.current().token_type == TokenType.COMMA:
+                self.parser.consume(TokenType.COMMA)
+
+            attributes[member.value] = initializer
+
+        self.parser.consume(TokenType.RBRACE)
+
+        return EntityLiteral(CustomType(template), attributes)
+
     def parse_index_expression(self, array: Expression) -> IndexExpression:
         """Parses an index expression for array access.
 
@@ -329,6 +342,38 @@ class ExpressionParser(ExpressionParserABC):
         self.parser.consume(TokenType.RBRACKET)
 
         return IndexExpression(array, index)
+
+    def parse_pipe_expression(self, args: List[Expression]) -> Expression:
+        """Parses a pipe expression beginning with a parameter list.
+
+        Args:
+            args (List[Expression]):
+                The list of args to be passed to the first function.
+
+        Returns:
+            Expression: The parsed pipe expression.
+        """
+        call: Optional[FunctionCallExpression] = None
+
+        while (
+            not self.parser.is_eof()
+            and self.parser.current().token_type == TokenType.ARROW
+        ):
+            self.parser.consume(TokenType.ARROW)
+            identifier = self.parser.consume(TokenType.IDENTIFIER).value
+            new_args: List[Expression] = [call] if call else args
+
+            if self.parser.current().token_type == TokenType.LPAREN:
+                self.parser.consume(TokenType.LPAREN)
+                new_args.extend(self.parse_arguments())
+                self.parser.consume(TokenType.RPAREN)
+
+            call = FunctionCallExpression(Identifier(identifier), new_args)
+
+        if call is None:
+            return ArrayLiteral(args)
+
+        return call
 
     def parse_postfix_expression(self, expr: Expression) -> Expression:
         """Parses the postfix expressions for member access and method calls.

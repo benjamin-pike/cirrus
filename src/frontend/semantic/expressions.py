@@ -39,7 +39,7 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
                 if left_type not in {
                     PrimitiveType(TokenType.INT),
                     PrimitiveType(TokenType.FLOAT),
-                    PrimitiveType(TokenType.STRING),
+                    PrimitiveType(TokenType.STR),
                 }:
                     raise TypeError(
                         f"Invalid operand types for {node.operator}: {left_type}"
@@ -139,53 +139,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
 
         return left_type
 
-    def analyze_numeric_literal(self, node: NumericLiteral) -> VarType:
-        """Analyses a NumericLiteral node, returning its type.
-
-        Args:
-            node (NumericLiteral): The NumericLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the numeric literal.
-        """
-        if isinstance(node.value, int):
-            return PrimitiveType(TokenType.INT)
-
-        return PrimitiveType(TokenType.FLOAT)
-
-    def analyze_string_literal(self, node: StringLiteral) -> VarType:
-        """Analyses a StringLiteral node, returning its type.
-
-        Args:
-            node (StringLiteral): The StringLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the string literal.
-        """
-        return PrimitiveType(TokenType.STRING)
-
-    def analyze_boolean_literal(self, node: BooleanLiteral) -> VarType:
-        """Analyses a BooleanLiteral node, returning its type.
-
-        Args:
-            node (BooleanLiteral): The BooleanLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the boolean literal.
-        """
-        return PrimitiveType(TokenType.BOOL)
-
-    def analyze_null_literal(self, node: NullLiteral) -> VarType:
-        """Analyses a NullLiteral node, returning its type.
-
-        Args:
-            node (NullLiteral): The NullLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the null literal.
-        """
-        return PrimitiveType(TokenType.NULL)
-
     def analyze_identifier(self, node: Identifier) -> VarType:
         """Analyses an Identifier node, checking if the
         variable is declared and returning its declared type.
@@ -260,79 +213,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
 
         return function_type.return_type
 
-    def analyze_array_literal(self, node: ArrayLiteral) -> VarType:
-        """Analyses an ArrayLiteral node, checking the element types.
-
-        Args:
-            node (ArrayLiteral): The ArrayLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the array.
-
-        Raises:
-            TypeError: If the element types are invalid.
-        """
-        if not node.elements:
-            return ArrayType(PrimitiveType(TokenType.NULL))
-
-        element_type = self.analyzer.analyze(node.elements[0])
-        for element in node.elements:
-            if self.analyzer.analyze(element) != element_type:
-                raise TypeError("Invalid element type in array literal")
-
-        return ArrayType(element_type)
-
-    def analyze_set_literal(self, node: SetLiteral) -> VarType:
-        """Analyses a SetLiteral node, checking the element types.
-
-        Args:
-            node (SetLiteral): The SetLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the set.
-
-        Raises:
-            TypeError: If the element types are invalid.
-        """
-        if not node.elements:
-            return SetType(PrimitiveType(TokenType.NULL))
-
-        element_type = self.analyzer.analyze(node.elements[0])
-        for element in node.elements:
-            if self.analyzer.analyze(element) != element_type:
-                raise TypeError("Invalid element type in set literal")
-
-        return SetType(element_type)
-
-    def analyze_map_literal(self, node: MapLiteral) -> VarType:
-        """Analyses a MapLiteral node, checking the key and value types.
-
-        Args:
-            node (MapLiteral): The MapLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the map.
-
-        Raises:
-            TypeError: If the key types are invalid.
-            TypeError: If the value types are invalid.
-        """
-
-        if not node.elements:
-            return MapType(PrimitiveType(TokenType.NULL), PrimitiveType(TokenType.NULL))
-
-        key, val = node.elements[0]
-        key_type = self.analyzer.analyze(key)
-        value_type = self.analyzer.analyze(val)
-
-        for k, v in node.elements:
-            if self.analyzer.analyze(k) != key_type:
-                raise TypeError("Invalid key type in map literal")
-            if self.analyzer.analyze(v) != value_type:
-                raise TypeError("Invalid value type in map literal")
-
-        return MapType(key_type, value_type)
-
     def analyze_index_expression(self, node: IndexExpression) -> VarType:
         """Analyses an IndexExpression node, checking the array and index types.
 
@@ -376,7 +256,7 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
             TypeError: If the argument types do not match the method declaration.
         """
         obj_type = self.analyzer.analyze(node.obj)
-        if not isinstance(obj_type, (SetType, MapType)):
+        if not isinstance(obj_type, (SetType, MapType, TemplateType)):
             raise TypeError(f"Type `{obj_type}` does not have methods")
         method_type = obj_type.methods.get(node.method.name)
 
@@ -400,6 +280,189 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
                 )
 
         return method_type.return_type
+
+    # Literals
+    def analyze_numeric_literal(self, node: NumericLiteral) -> VarType:
+        """Analyses a NumericLiteral node, returning its type.
+
+        Args:
+            node (NumericLiteral): The NumericLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the numeric literal.
+        """
+        if isinstance(node.value, int):
+            return PrimitiveType(TokenType.INT)
+
+        return PrimitiveType(TokenType.FLOAT)
+
+    def analyze_string_literal(self, node: StringLiteral) -> VarType:
+        """Analyses a StringLiteral node, returning its type.
+
+        Args:
+            node (StringLiteral): The StringLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the string literal.
+        """
+        return PrimitiveType(TokenType.STR)
+
+    def analyze_boolean_literal(self, node: BooleanLiteral) -> VarType:
+        """Analyses a BooleanLiteral node, returning its type.
+
+        Args:
+            node (BooleanLiteral): The BooleanLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the boolean literal.
+        """
+        return PrimitiveType(TokenType.BOOL)
+
+    def analyze_null_literal(self, node: NullLiteral) -> VarType:
+        """Analyses a NullLiteral node, returning its type.
+
+        Args:
+            node (NullLiteral): The NullLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the null literal.
+        """
+        return PrimitiveType(TokenType.NULL)
+
+    def analyze_array_literal(self, node: ArrayLiteral) -> VarType:
+        """Analyses an ArrayLiteral node, checking the element types.
+
+        Args:
+            node (ArrayLiteral): The ArrayLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the array.
+
+        Raises:
+            TypeError: If the element types are invalid.
+        """
+        if not node.elements:
+            return ArrayType(VoidType())
+
+        element_type = self.analyzer.analyze(node.elements[0])
+        for element in node.elements:
+            if self.analyzer.analyze(element) != element_type:
+                raise TypeError("Invalid element type in array literal")
+
+        return ArrayType(element_type)
+
+    def analyze_set_literal(self, node: SetLiteral) -> VarType:
+        """Analyses a SetLiteral node, checking the element types.
+
+        Args:
+            node (SetLiteral): The SetLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the set.
+
+        Raises:
+            TypeError: If the element types are invalid.
+        """
+        if not node.elements:
+            return SetType(VoidType())
+
+        element_type = self.analyzer.analyze(node.elements[0])
+        for element in node.elements:
+            if self.analyzer.analyze(element) != element_type:
+                raise TypeError("Invalid element type in set literal")
+
+        return SetType(element_type)
+
+    def analyze_map_literal(self, node: MapLiteral) -> VarType:
+        """Analyses a MapLiteral node, checking the key and value types.
+
+        Args:
+            node (MapLiteral): The MapLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the map.
+
+        Raises:
+            TypeError: If the key types are invalid.
+            TypeError: If the value types are invalid.
+        """
+
+        if not node.elements:
+            return MapType(VoidType(), VoidType())
+
+        key, val = node.elements[0]
+        key_type = self.analyzer.analyze(key)
+        value_type = self.analyzer.analyze(val)
+
+        for k, v in node.elements:
+            if self.analyzer.analyze(k) != key_type:
+                raise TypeError("Invalid key type in map literal")
+            if self.analyzer.analyze(v) != value_type:
+                raise TypeError("Invalid value type in map literal")
+
+        return MapType(key_type, value_type)
+
+    def analyze_entity_literal(self, node: EntityLiteral) -> VarType:
+        """Analyses an EntityLiteral node, checking the attribute types.
+
+        Args:
+            node (EntityLiteral): The EntityLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the entity.
+
+        Raises:
+            NameError: If the template is not declared.
+            TypeError: If the attribute types do not match the template declaration.
+        """
+        template_symbol = self.analyzer.symbol_table.lookup(node.template.name, False)
+        if not template_symbol:
+            raise NameError(f"Template `{node.template}` not found")
+        template = template_symbol.var_type
+        if not isinstance(template, TemplateType):
+            raise TypeError(f"`{node.template}` is not a template")
+
+        for key, value in node.attributes.items():
+            if key not in template.attributes:
+                raise NameError(
+                    f"Attribute `{key}` not defined in template `{node.template.name}`"
+                )
+            entity_member_type = self.analyzer.analyze(value)
+            template_member_type = template.attributes[key]
+
+            if entity_member_type != template_member_type:
+                raise TypeError(
+                    f"Type mismatch for attribute `{key}`: "
+                    f"`{template.attributes[key]}` != `{entity_member_type}`"
+                )
+
+        return template
+
+    def analyze_function_literal(self, node: FunctionLiteral) -> VarType:
+        """Analyses an FunctionLiteral node, checking the parameter and return types.
+
+        Args:
+            node (FunctionLiteral): The FunctionLiteral node to analyse.
+
+        Returns:
+            VarType: The type of the function literal.
+        """
+        self.analyzer.symbol_table.enter_scope(node)
+
+        for param_name, param_type in node.parameters:
+            self.analyzer.symbol_table.define(param_name, param_type)
+
+        return_type = VoidType()
+        for statement in node.body.statements:
+            if not isinstance(statement, ReturnStatement):
+                continue
+            return_type = self.analyzer.statement_analyzer.get_return_type(statement)
+
+        self.analyzer.statement_analyzer.analyze_block_statement(node.body)
+
+        self.analyzer.symbol_table.exit_scope()
+
+        return FunctionType(return_type, node.parameters)
 
     # Helpers
     def _is_assignable(self, node: Expression) -> bool:

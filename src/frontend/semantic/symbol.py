@@ -1,5 +1,5 @@
 from typing import *
-from frontend.semantic.types import FunctionType, VarType
+from frontend.semantic.types import *
 from frontend.semantic.typing import ScopeABC, SymbolABC, SymbolTableABC
 from frontend.syntax.ast import *
 
@@ -27,11 +27,11 @@ class Scope(ScopeABC):
 
     Attributes:
         symbols (Dict[str, Symbol]): A dictionary mapping names to symbols.
-        parent_node (Optional[Statement]): The parent node of the scope, if any.
+        parent_node (Optional[Node]): The parent node of the scope, if any.
         reachable (bool): True if the scope is reachable, otherwise False.
     """
 
-    def __init__(self, parent_node: Optional[Statement] = None) -> None:
+    def __init__(self, parent_node: Optional[Node] = None) -> None:
         self.symbols: Dict[str, SymbolABC] = {}
         self.parent_node = parent_node
         self.reachable = True
@@ -55,7 +55,7 @@ class SymbolTable(SymbolTableABC):
         """Initializes the symbol table with an empty global scope."""
         self.scopes: List[ScopeABC] = [Scope()]
 
-    def enter_scope(self, parent_node: Optional[Statement] = None) -> None:
+    def enter_scope(self, parent_node: Optional[Node] = None) -> None:
         """Enters a new scope, optionally as a function scope.
 
         Args:
@@ -132,6 +132,8 @@ class SymbolTable(SymbolTableABC):
         for scope in reversed(self.scopes):
             if isinstance(scope.parent_node, FunctionDeclaration):
                 return scope.parent_node.function_type
+            if isinstance(scope.parent_node, FunctionLiteral):
+                return FunctionType(InferType(), scope.parent_node.parameters)
 
         return None
 

@@ -1,13 +1,5 @@
 from frontend.semantic.typing import SemanticAnalyzerABC, StatementAnalyzerABC
-from frontend.semantic.types import (
-    ArrayType,
-    InferType,
-    PrimitiveType,
-    VarType,
-    VoidType,
-    SetType,
-    MapType,
-)
+from frontend.semantic.types import *
 from frontend.syntax.ast import *
 
 
@@ -47,6 +39,13 @@ class StatementAnalyzer(StatementAnalyzerABC):
 
         if isinstance(node.var_type, InferType):
             node.var_type = init_type  # Infer the variable type from the initializer
+        if isinstance(node.var_type, CustomType):
+            template_symbol = self.analyzer.symbol_table.lookup(
+                node.var_type.name, False
+            )
+            if not template_symbol:
+                raise NameError(f"Template `{node.var_type.name}` not found")
+            node.var_type = template_symbol.var_type
         if node.var_type != init_type:
             raise TypeError(
                 f"Type mismatch for variable `{node.name}`: "
@@ -64,12 +63,15 @@ class StatementAnalyzer(StatementAnalyzerABC):
 
         return node.var_type
 
-    def analyze_function_declaration(self, node: FunctionDeclaration) -> VarType:
+    def analyze_function_declaration(
+        self, node: FunctionDeclaration, context: Optional[TemplateType] = None
+    ) -> FunctionType:
         """Analyses a FunctionDeclaration node, adding the function
         to the symbol table and managing parameter scope.
 
         Args:
             node (FunctionDeclaration): The FunctionDeclaration node to analyse.
+            context (Optional[TemplateType]): The template context for the function.
 
         Returns:
             VarType: The return type of the function.
@@ -83,12 +85,44 @@ class StatementAnalyzer(StatementAnalyzerABC):
         self.analyzer.symbol_table.define(node.name, node.function_type)
 
         self.analyzer.symbol_table.enter_scope(node)
+        if context:
+            for attr_name, attr_type in context.attributes.items():
+                self.analyzer.symbol_table.define(attr_name, attr_type)
+            for method_name, method_type in context.methods.items():
+                self.analyzer.symbol_table.define(method_name, method_type)
         for param_name, param_type in node.function_type.param_types:
             self.analyzer.symbol_table.define(param_name, param_type)
+
         self.analyze_block_statement(node.body, False)
         self.analyzer.symbol_table.exit_scope()
 
-        return node.function_type.return_type
+        return node.function_type
+
+    def analyze_template_declaration(self, node: TemplateDeclaration) -> VarType:
+        """Analyses a TemplateDeclaration node, adding the template
+        to the symbol table and managing parameter scope.
+
+        Args:
+            node (TemplateDeclaration): The TemplateDeclaration node to analyse.
+
+        Returns:
+            VarType: The return type of the template.
+
+        Raises:
+            NameError: If the template is redeclared.
+        """
+        if self.analyzer.symbol_table.lookup(node.name, False):
+            raise NameError(f"Cannot redeclare template `{node.name}`")
+
+        template_type = TemplateType(CustomType(node.name), node.attributes, {})
+        for name, declaration in node.methods.items():
+            template_type.methods[name] = self.analyze_function_declaration(
+                declaration, template_type
+            )
+
+        self.analyzer.symbol_table.define(node.name, template_type)
+
+        return template_type
 
     def analyze_block_statement(
         self, node: BlockStatement, new_scope: bool = True
@@ -327,12 +361,26 @@ class StatementAnalyzer(StatementAnalyzerABC):
         Args:
             node (ReturnStatement): The ReturnStatement node to analyse.
 
-        Raises:
-            SyntaxError: If the return statement is not within a function block.
-            TypeError: If the return type does not match the function return type.
+        Returns:
+            VarType: The return type of the function.
+        """
+        return_type = self.get_return_type(node)
+        self.analyzer.symbol_table.set_unreachable()
+
+        return return_type
+
+    def get_return_type(self, node: ReturnStatement) -> VarType:
+        """Checks the return type of a ReturnStatement node.
+
+        Args:
+            node (ReturnStatement): The ReturnStatement node to check.
 
         Returns:
             VarType: The return type of the function.
+
+        Raises:
+            SyntaxError: If the return statement is not within a function block.
+            TypeError: If the return type does not match the function return type.
         """
         fn_type = self.analyzer.symbol_table.get_current_function_type()
         if not fn_type:
@@ -343,13 +391,14 @@ class StatementAnalyzer(StatementAnalyzerABC):
         return_type = VoidType()
         if node.expression:
             return_type = self.analyzer.analyze(node.expression)
-        if return_type != fn_type.return_type:
+
+        if fn_type.return_type == InferType():
+            fn_type.return_type = return_type
+        elif return_type != fn_type.return_type:
             raise TypeError(
                 f"Return type `{return_type}` does not match "
                 f"function return type `{fn_type.return_type}`"
             )
-
-        self.analyzer.symbol_table.set_unreachable()
 
         return return_type
 

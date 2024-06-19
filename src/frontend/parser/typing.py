@@ -55,6 +55,10 @@ class ExpressionParserABC(Protocol):
         """Parses a map literal."""
 
     @abstractmethod
+    def parse_entity_literal(self, template: str) -> Expression:
+        """Parses an object literal."""
+
+    @abstractmethod
     def parse_index_expression(self, array: Expression) -> IndexExpression:
         """Parses an index expression."""
 
@@ -93,6 +97,10 @@ class StatementParserABC(Protocol):
     @abstractmethod
     def parse_variable_declaration(self) -> VariableDeclaration:
         """Parses a variable declaration statement."""
+
+    # @abstractmethod
+    # def parse_entity_declaration(self) -> VariableDeclaration:
+    #     """Parses an entity declaration statement."""
 
     @abstractmethod
     def parse_block_statement(self) -> BlockStatement:
@@ -154,5 +162,29 @@ class ParserABC(ABC):
         """Retrieves the token at the current position."""
 
     @abstractmethod
+    def peek(self) -> Token:
+        """Retrieves the token at the next position."""
+
+    @abstractmethod
     def is_eof(self) -> bool:
         """Checks if the current token is the end-of-file token."""
+
+    @abstractmethod
+    def parse_var_type(self) -> VarType:
+        """Parses a variable type."""
+
+    @abstractmethod
+    def parse_array_type(self, var_type: VarType) -> VarType:
+        """Parses an array type."""
+
+    @abstractmethod
+    def parse_set_or_map_type(self, var_type: VarType) -> VarType:
+        """Parses a set or map type."""
+
+    @abstractmethod
+    def parse_return_type(self) -> VarType:
+        """Parses a return type for a function declaration."""
+
+    @abstractmethod
+    def parse_function_type(self) -> FunctionType:
+        """Parses a function type."""

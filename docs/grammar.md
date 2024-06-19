@@ -4,7 +4,9 @@
 ```ebnf
 KEYWORD = 'return' | 'if' | 'else' | 'while' | 'range' | 'each' | 'func' |
           'echo' |'in' | 'to' | 'by' | 'halt' | 'skip' | 'int' | 'float' |
-          'bool' | 'string' | 'null' | 'infer' | 'void';
+          'bool' | 'string' | 'null' | 'infer' | 'void' | 'true' | 'false' |
+          'template' | 'entity' 
+
 ```
 
 ### Identifiers
@@ -30,7 +32,7 @@ ASCII_CHAR = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | '
              ',' | '-' | '.' | '/' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' |
              '\\' | ']' | '^' | '_' | '`' | '{' | '|' | '}' | '~' | '\'' | '"';
 ESCAPE_CHAR = '\\' , ( '\'' | '"' | '\\' );
-STRING = { ASCII_CHAR | ESCAPE_CHAR };
+STR = { ASCII_CHAR | ESCAPE_CHAR };
 ```
 
 ### Collection Types
@@ -38,6 +40,14 @@ STRING = { ASCII_CHAR | ESCAPE_CHAR };
 ARRAY = '[' , [ EXPRESSION , { ',' , EXPRESSION } ] , ']';
 SET = '{' , [ EXPRESSION , { ',' , EXPRESSION } ] , '}';
 MAP = '{' , [ EXPRESSION , ':' , EXPRESSION , { ',' , EXPRESSION , ':' , EXPRESSION } ] , '}';
+```
+
+### Object Types
+```ebnf
+TEMPLATE_DECLARATION = 'template' , IDENTIFIER , '{' , { ATTRIBUTE_DECLARATION, FUNCTION_DECLARATION } , '}';
+ENTITY = 'entity' , IDENTIFIER, =, ENTITY_LITERAL;
+ATTRIBUTE_DECLARATION = TYPE , IDENTIFIER , ';';
+ENTITY_LITERAL = IDENTIFIER, '{' , { IDENTIFIER , ':' , EXPRESSION , ',' } , '}';
 ```
 
 ### Operators
@@ -88,12 +98,13 @@ COMPARISON_EXPRESSION = EXPRESSION , RELATIONAL_OPERATORS , EXPRESSION;
 LOGICAL_EXPRESSION = EXPRESSION , LOGICAL_OPERATORS , EXPRESSION;
 UNARY_EXPRESSION = INCREMENT_DECREMENT_OPERATORS , IDENTIFIER | '!' , IDENTIFIER;
 FUNCTION_CALL_EXPRESSION = IDENTIFIER , '(' , [ ARG_LIST ] , ')';
+ANONYMOUS_FUNCTION = 'func', '[', [ PARAM_LIST ], ']', '>>', '{', { STATEMENT }, '}';
 METHOD_CALL_EXPRESSION = IDENTIFIER , '.' , IDENTIFIER , '(' , [ ARG_LIST ] , ')';
 ARG_LIST = EXPRESSION , { ',' , EXPRESSION };
 PIPE_EXPRESSION =  '[' , ARG_LIST , ']' , '>>' , PIPE_FUNCTION , { '>>' , PIPE_FUNCTION };
 PIPE_FUNCTION = IDENTIFIER , [ '(' , [ FUNC_ARG_LIST ] , ')' ];
 
-LITERAL = NUMBER | STRING | BOOL | ARRAY | SET | MAP 'null';
+LITERAL = NUMBER | STR | BOOL | ARRAY | SET | MAP | 'null' | ENTITY_LITERAL | ANONYMOUS_FUNCTION;
 ```
 
 ### Statements
@@ -119,7 +130,7 @@ EACH_STATEMENT = 'each' , IDENTIFIER , 'in' , EXPRESSION , '{' , { STATEMENT } ,
 RANGE_STATEMENT = 'range' , IDENTIFIER , 'in' , EXPRESSION , 'to' , EXPRESSION , [ 'by' , EXPRESSION ] , '{' , { STATEMENT } , '}';
 HALT_STATEMENT = 'halt' , ';';
 SKIP_STATEMENT = 'skip' , ';';
-ECHO_STATEMENT = 'echo' , STRING , ';';
+ECHO_STATEMENT = 'echo' , STR , ';';
 EXPRESSION_STATEMENT = EXPRESSION , ';';
 BLOCK_STATEMENT = '{' , { STATEMENT } , '}';
 ```

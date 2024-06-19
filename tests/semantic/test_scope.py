@@ -117,7 +117,7 @@ def test_nested_blocks_and_scopes():
 def test_if_else():
     code = """
         int x = 5;
-        if x > 3 {
+        if (x > 3) {
             echo "greater";
         } else {
             echo "smaller";
@@ -129,7 +129,7 @@ def test_if_else():
 def test_while_loop():
     code = """
         int x = 0;
-        while x < 10 {
+        while (x < 10) {
             x++;
         }
     """
@@ -138,7 +138,7 @@ def test_while_loop():
 
 def test_each_statement():
     code = """
-        each x in [1, 2, 3] {
+        each (x in [1, 2, 3]) {
             echo x;
         }
     """
@@ -147,7 +147,7 @@ def test_each_statement():
 
 def test_range_statement():
     code = """
-        range x in 0 to 10 by 1 {
+        range (x in 0 to 10 by 1) {
             echo x;
         }
     """
@@ -157,9 +157,9 @@ def test_range_statement():
 def test_halt_statement():
     code = """
         int x = 0;
-        while x < 10 {
+        while (x < 10) {
             x++;
-            if x == 5 {
+            if (x == 5) {
                 halt; // halt execution of the loop
             }
             echo x;
@@ -170,7 +170,7 @@ def test_halt_statement():
 
 def test_invalid_skip_statement():
     code = """
-        if true {
+        if (true) {
             skip; // skip statement is only allowed in loop scopes
         }
     """
@@ -240,7 +240,7 @@ def test_return_statement_reachability():
 
 def test_halt_statement_reachability():
     code = """
-        while true {
+        while (true) {
             halt;
             echo "This should be unreachable";  // Unreachable code
         }
@@ -251,7 +251,7 @@ def test_halt_statement_reachability():
 
 def test_skip_statement_reachability():
     code = """
-        while true {
+        while (true) {
             skip;
             echo "This should be unreachable";  // Unreachable code
         }
@@ -265,10 +265,10 @@ def test_valid_control_flow_statement_use():
         func main -> int = [] >> {
             int x = 0;
 
-            while x < 10 {
+            while (x < 10) {
                 x++;
-                if x == 5 { skip; }
-                if x == 7 { halt; }
+                if (x == 5) { skip; }
+                if (x == 7) { halt; }
                 echo x;
             }
 
@@ -285,8 +285,8 @@ def test_nested_if_else_reachability():
         func foo -> void = [] >> {
             int x = 5;
 
-            if x > 3 {
-                if x < 10 {
+            if (x > 3) {
+                if (x < 10) {
                     return;
                 } else {
                     return;
@@ -305,7 +305,7 @@ def test_nested_if_else_reachability():
 def test_unreachable_if_block():
     code = """
         func foo -> void = [] >> {
-            if false {
+            if (false) {
                 echo "This should be unreachable";  // Unreachable code
             } else {
                 return;
@@ -319,7 +319,7 @@ def test_unreachable_if_block():
 def test_unreachable_else_block():
     code = """
         func foo -> void = [] >> {
-            if true {
+            if (true) {
                 return;
             } else {
                 echo "This should be unreachable";  // Unreachable code
