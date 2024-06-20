@@ -88,6 +88,15 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
                         f"Invalid operand type for {node.operator}: {operand_type}"
                     )
                 return PrimitiveType(TokenType.BOOL)
+            case TokenType.MINUS:
+                if operand_type not in {
+                    PrimitiveType(TokenType.INT),
+                    PrimitiveType(TokenType.FLOAT),
+                }:
+                    raise TypeError(
+                        f"Invalid operand type for {node.operator}: {operand_type}"
+                    )
+                return operand_type
             case TokenType.INCREMENT | TokenType.DECREMENT:
                 if not self._is_assignable(node.operand):
                     raise TypeError(f"Invalid assignment target for {node.operator}")

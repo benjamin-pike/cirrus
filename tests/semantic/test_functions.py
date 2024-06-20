@@ -258,19 +258,25 @@ def test_nested_template_declaration():
 
 def test_entity_declaration():
     code = """
+        func abs -> int = [int x] >> {
+            if (x < 0) {
+                return -x;
+            }
+            return x;
+        }
+
         template Point = {
             int x;
             int y;
             
-            func move -> void = [int dx, int dy] >> {
-                x = x + dx;
-                y = y + dy;
+            func calcManhattanDistance -> int = [int x2, int y2] >> {
+                return abs(x - x2) + abs(y - y2);
             }
         };
         
-        entity pt = Point{x: 1, y: 2};
+        entity p1 = Point{x: 1, y: 2};
         
-        pt.move(2, 3);
+        echo p1.calcManhattanDistance(4, 6);
     """
     analyze_code(code)
 

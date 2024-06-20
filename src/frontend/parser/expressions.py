@@ -106,6 +106,7 @@ class ExpressionParser(ExpressionParserABC):
             TokenType.INCREMENT,
             TokenType.DECREMENT,
             TokenType.LOGICAL_NOT,
+            TokenType.MINUS,
         }:
             self.parser.consume(token.token_type)
             operand = self.parse_unary_expression()
