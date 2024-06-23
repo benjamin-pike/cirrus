@@ -121,7 +121,9 @@ class Parser(ParserABC):
                 var_type = InferType()
                 self.consume(TokenType.INFER)
             case TokenType.IDENTIFIER:
-                var_type = CustomType(self.consume(TokenType.IDENTIFIER).value)
+                var_type = CustomTypeIdentifier(
+                    self.consume(TokenType.IDENTIFIER).value
+                )
 
             case _:
                 raise SyntaxError(f"Unexpected token {self.current()}")

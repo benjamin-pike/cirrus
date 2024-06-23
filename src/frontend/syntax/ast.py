@@ -470,7 +470,9 @@ class EntityLiteral(Expression):
         elements (Dict[str, Expression]]): The elements of the entity.
     """
 
-    def __init__(self, template: CustomType, attributes: Dict[str, Expression]) -> None:
+    def __init__(
+        self, template: CustomTypeIdentifier, attributes: Dict[str, Expression]
+    ) -> None:
         self.template = template
         self.attributes = attributes
 

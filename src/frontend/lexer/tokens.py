@@ -45,7 +45,7 @@ class TokenType(Enum):
     SEMICOLON = auto()  # ";"
     COLON = auto()  # ":"
     ARROW = auto()  # ">>"
-    RETURN_ARROW = auto()  # "->"
+    RT_ARROW = auto()  # "->"
 
     # Literals
     INT_LITERAL = auto()
@@ -135,7 +135,7 @@ spec = (
     (TokenType.SEMICOLON, r";"),
     (TokenType.COLON, r":"),
     (TokenType.ARROW, r">>"),
-    (TokenType.RETURN_ARROW, r"->"),
+    (TokenType.RT_ARROW, r"->"),
     (TokenType.EOL_COMMENT, r"//.*\n"),
     (TokenType.DELIMITED_COMMENT, r"/\*[\s\S]*?(?:\*/|$)"),
     (TokenType.LOGICAL_AND, r"&&"),

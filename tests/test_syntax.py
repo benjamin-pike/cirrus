@@ -84,7 +84,7 @@ def test_unexpected_keyword():
 
 def test_invalid_function_declaration():
     code = "func add = a, b >> { return a + b; }"
-    check(code, "Expected token TokenType.RETURN_ARROW, but got TokenType.ASSIGN")
+    check(code, "Expected token TokenType.RT_ARROW, but got TokenType.ASSIGN")
 
 
 def test_missing_function_body():

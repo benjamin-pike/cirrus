@@ -99,6 +99,7 @@ class SetType(VarType):
 
     def __init__(self, element_type: VarType):
         self.element_type = element_type
+        self.attributes = {}
         self.methods = {
             "add": FunctionType(self, [("element", element_type)]),
             "remove": FunctionType(self, [("element", element_type)]),
@@ -132,6 +133,7 @@ class MapType(VarType):
     def __init__(self, key_type: VarType, value_type: VarType):
         self.key_type = key_type
         self.value_type = value_type
+        self.attributes = {}
         self.methods = {
             "get": FunctionType(value_type, [("key", key_type)]),
             "put": FunctionType(self, [("key", key_type), ("value", value_type)]),
@@ -159,7 +161,7 @@ class MapType(VarType):
         return hash(self.__repr__())
 
 
-class CustomType(VarType):
+class CustomTypeIdentifier(VarType):
     """Represents template identifiers
 
     Args:
@@ -170,13 +172,13 @@ class CustomType(VarType):
         self.name = name
 
     def __repr__(self):
-        return f"CustomType({self.name})"
+        return f"CustomTypeIdentifier({self.name})"
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, TemplateType):
             return self.name == other.identifier.name
 
-        return isinstance(other, CustomType) and self.name == other.name
+        return isinstance(other, CustomTypeIdentifier) and self.name == other.name
 
     def __hash__(self) -> int:
         return hash(self.__repr__())
@@ -192,7 +194,7 @@ class TemplateType(VarType):
 
     def __init__(
         self,
-        identifier: CustomType,
+        identifier: CustomTypeIdentifier,
         attributes: Dict[str, VarType],
         methods: Dict[str, FunctionType],
     ):
@@ -204,7 +206,7 @@ class TemplateType(VarType):
         return f"TemplateType({self.identifier}, {self.attributes}, {self.methods})"
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, CustomType):
+        if isinstance(other, CustomTypeIdentifier):
             return self.identifier.name == other.name
 
         if isinstance(other, TemplateType):

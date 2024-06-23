@@ -343,9 +343,72 @@ def test_invalid_nested_entity_declaration():
     """
     with pytest.raises(
         TypeError,
-        match=r"Type mismatch for attribute `followers`: `ArrayType\(CustomType\(User\)\)` != `PrimitiveType\(INT\)`"
+        match=r"Type mismatch for attribute `followers`: `ArrayType\(CustomTypeIdentifier\(User\)\)` != `PrimitiveType\(INT\)`"
     ):
         analyze_code(code)
+        
+def test_entity_attribute_access():
+    code = """
+        template User = {
+            str name;
+            int age;
+            User[] followers;
+        };
+        
+        entity user = User{
+            name: "James",
+            age: 25,
+            followers: [],
+        };
+        
+        str name = user.name;
+        int age = user.age;
+    """
+    analyze_code(code)
+    
+def test_nested_entity_attribute_access():
+    code = """
+        template User = {
+            str name;
+            int age;
+            User[] followers;
+        };
+        
+        entity user = User{
+            name: "James",
+            age: 25,
+            followers: [
+                User{name: "Bob", age: 30, followers: []},
+                User{name: "Charlie", age: 35, followers: []}
+            ],
+        };
+        
+        str name = user.followers[0].name;
+        int age = user.followers[1].age;
+    """
+    analyze_code(code)
+    
+def test_nested_entity_attribute_assignment():
+    code = """
+        template User = {
+            str name;
+            int age;
+            User[] followers;
+        };
+        
+        entity user = User{
+            name: "James",
+            age: 25,
+            followers: [
+                User{name: "Bob", age: 30, followers: []},
+                User{name: "Charlie", age: 35, followers: []}
+            ],
+        };
+        
+        user.followers[0].name = "Bobby";
+        user.followers[1].age = 40;
+    """
+    analyze_code(code)
 
 
 def test_set_method_call_expression():

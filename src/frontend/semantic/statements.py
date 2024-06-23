@@ -39,13 +39,6 @@ class StatementAnalyzer(StatementAnalyzerABC):
 
         if isinstance(node.var_type, InferType):
             node.var_type = init_type  # Infer the variable type from the initializer
-        if isinstance(node.var_type, CustomType):
-            template_symbol = self.analyzer.symbol_table.lookup(
-                node.var_type.name, False
-            )
-            if not template_symbol:
-                raise NameError(f"Template `{node.var_type.name}` not found")
-            node.var_type = template_symbol.var_type
         if node.var_type != init_type:
             raise TypeError(
                 f"Type mismatch for variable `{node.name}`: "
@@ -114,7 +107,9 @@ class StatementAnalyzer(StatementAnalyzerABC):
         if self.analyzer.symbol_table.lookup(node.name, False):
             raise NameError(f"Cannot redeclare template `{node.name}`")
 
-        template_type = TemplateType(CustomType(node.name), node.attributes, {})
+        template_type = TemplateType(
+            CustomTypeIdentifier(node.name), node.attributes, {}
+        )
         for name, declaration in node.methods.items():
             template_type.methods[name] = self.analyze_function_declaration(
                 declaration, template_type

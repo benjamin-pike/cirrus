@@ -267,6 +267,13 @@ def test_empty_array_declaration():
         int[] arr = [];
     """
     analyze_code(code)
+    
+def test_nested_array_assignment():
+    code = """
+        int[][] arr = [[1, 2], [3, 4]];
+        arr[0][0] = 5;
+    """
+    analyze_code(code)
 
 
 def test_invalid_logical_operation():
