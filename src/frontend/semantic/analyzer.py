@@ -49,7 +49,15 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
 
         analyze = getattr(analyzer, method_name, self.analyze_generic)
 
-        return analyze(node)
+        node_type = analyze(node)
+
+        if isinstance(node_type, CustomTypeIdentifier):
+            template_symbol = self.symbol_table.lookup(node_type.name)
+            if not template_symbol:
+                raise NameError(f"Type {node_type.name} is not defined.")
+            node_type = template_symbol.var_type
+
+        return node_type
 
     def analyze_generic(self, node: Node) -> VarType:
         """Called if no explicit analyzer function exists for a node.

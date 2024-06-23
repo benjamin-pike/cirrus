@@ -903,15 +903,56 @@ def test_entity_declaration():
         [
             VariableDeclaration(
                 "character",
-                CustomType("Person"),
+                CustomTypeIdentifier("Person"),
                 EntityLiteral(
-                    CustomType("Person"),
-                    {
-                        "name": StringLiteral("Alice"),
-                        "age": NumericLiteral(25)
-                    },
+                    CustomTypeIdentifier("Person"),
+                    {"name": StringLiteral("Alice"), "age": NumericLiteral(25)},
                 ),
             )
         ]
     )
     check(code, expected)
+
+
+def test_member_access_expression():
+    code = """
+        int x = foo.bar.baz.qux;
+    """
+    excepted = Program(
+        [
+            VariableDeclaration(
+                "x",
+                PrimitiveType(TokenType.INT),
+                MemberAccessExpression(
+                    MemberAccessExpression(
+                        MemberAccessExpression(Identifier("foo"), Identifier("bar")),
+                        Identifier("baz"),
+                    ),
+                    Identifier("qux"),
+                ),
+            )
+        ]
+    )
+    check(code, excepted)
+    
+def test_property_assignment_expression():
+    code = """
+        foo.bar.baz.qux = 5;
+    """
+    excepted = Program(
+        [
+            ExpressionStatement(
+                AssignmentExpression(
+                    MemberAccessExpression(
+                        MemberAccessExpression(
+                            MemberAccessExpression(Identifier("foo"), Identifier("bar")),
+                            Identifier("baz"),
+                        ),
+                        Identifier("qux"),
+                    ),
+                    NumericLiteral(5),
+                )
+            )
+        ]
+    )
+    check(code, excepted)

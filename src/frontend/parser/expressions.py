@@ -56,7 +56,7 @@ class ExpressionParser(ExpressionParserABC):
             self.parser.consume(TokenType.ASSIGN)
             right = self.parse_assignment_expression()
 
-            if isinstance(left, (Identifier, IndexExpression)):
+            if isinstance(left, (Identifier, IndexExpression, MemberAccessExpression)):
                 return AssignmentExpression(left, right)
 
             raise SyntaxError("Invalid left-hand side in assignment")
@@ -327,7 +327,7 @@ class ExpressionParser(ExpressionParserABC):
 
         self.parser.consume(TokenType.RBRACE)
 
-        return EntityLiteral(CustomType(template), attributes)
+        return EntityLiteral(CustomTypeIdentifier(template), attributes)
 
     def parse_index_expression(self, array: Expression) -> IndexExpression:
         """Parses an index expression for array access.

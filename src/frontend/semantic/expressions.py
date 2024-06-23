@@ -122,21 +122,13 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
             VarType: The type of the assignment expression.
 
         Raises:
-            NameError: If the variable is not declared.
             TypeError: If the variable type does not match the assigned value type.
             TypeError: If the assignment target is invalid.
         """
-        if isinstance(node.left, Identifier):
-            var_name = node.left.name
-        elif isinstance(node.left, IndexExpression) and isinstance(
-            node.left.array, Identifier
+        if not isinstance(
+            node.left, (Identifier, IndexExpression, MemberAccessExpression)
         ):
-            var_name = node.left.array.name
-        else:
             raise TypeError("Invalid assignment target")
-
-        if not self.analyzer.symbol_table.lookup(var_name, True):
-            raise NameError(f"Variable `{var_name}` not declared")
 
         left_type = self.analyzer.analyze(node.left)
         right_type = self.analyzer.analyze(node.right)
@@ -247,8 +239,28 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return array_type.element_type
 
     def analyze_member_access_expression(self, node: MemberAccessExpression) -> VarType:
-        """Not implemented."""
-        raise NotImplementedError
+        """Analyses a MemberAccessExpression node, checking the object type.
+
+        Args:
+            node (MemberAccessExpression): The MemberAccessExpression node to analyse.
+
+        Returns:
+            VarType: The type of the member.
+
+        Raises:
+            TypeError: If the object type does not have the member.
+        """
+        obj_type = self.analyzer.analyze(node.obj)
+        if not isinstance(obj_type, (SetType, MapType, TemplateType)):
+            raise TypeError(f"Type `{obj_type}` does not have members")
+        member_type = obj_type.attributes.get(node.member.name)
+
+        if member_type is None:
+            raise TypeError(
+                f"Member `{node.member.name}` is not defined on type `{obj_type}`"
+            )
+
+        return member_type
 
     def analyze_method_call_expression(self, node: MethodCallExpression) -> VarType:
         """Analyses a MethodCallExpression node,

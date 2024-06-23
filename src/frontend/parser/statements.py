@@ -131,7 +131,9 @@ class StatementParser(StatementParserABC):
         initializer = self.expression_parser.parse_entity_literal(template)
         self.parser.consume(TokenType.SEMICOLON)
 
-        return VariableDeclaration(name.value, CustomType(template), initializer)
+        return VariableDeclaration(
+            name.value, CustomTypeIdentifier(template), initializer
+        )
 
     def parse_block_statement(self) -> BlockStatement:
         """Parses a block statement.
@@ -274,7 +276,7 @@ class StatementParser(StatementParserABC):
         """
         self.parser.consume(TokenType.FUNC)
         name = self.parser.consume(TokenType.IDENTIFIER)
-        self.parser.consume(TokenType.RETURN_ARROW)
+        self.parser.consume(TokenType.RT_ARROW)
         return_type = self.parser.parse_return_type()
         self.parser.consume(TokenType.ASSIGN)
         self.parser.consume(TokenType.LBRACKET)
