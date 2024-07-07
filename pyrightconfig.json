@@ -1,6 +1,7 @@
 {
     "typeCheckingMode": "strict",
     "reportWildcardImportFromLibrary": "none",
+    "reportMissingTypeStubs": "none",
     "exclude": [
         "**/__pycache__"
     ]

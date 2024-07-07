@@ -33,9 +33,7 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
 
         match node.operator:
             # Arithmetic operators
-            case (
-                TokenType.PLUS | TokenType.MINUS | TokenType.MULTIPLY | TokenType.DIVIDE
-            ):
+            case TokenType.PLUS:
                 if left_type not in {
                     PrimitiveType(TokenType.INT),
                     PrimitiveType(TokenType.FLOAT),
@@ -45,15 +43,27 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
                         f"Invalid operand types for {node.operator}: {left_type}"
                     )
                 return left_type
+            case TokenType.MINUS | TokenType.MULTIPLY | TokenType.DIVIDE:
+                if left_type not in {
+                    PrimitiveType(TokenType.INT),
+                    PrimitiveType(TokenType.FLOAT),
+                }:
+                    raise TypeError(
+                        f"Invalid operand types for {node.operator}: {left_type}"
+                    )
+                return left_type
             # Comparison operators
-            case (
-                TokenType.EQUAL
-                | TokenType.NOT_EQUAL
-                | TokenType.LT
-                | TokenType.GT
-                | TokenType.LTE
-                | TokenType.GTE
-            ):
+            case TokenType.EQUAL | TokenType.NOT_EQUAL:
+                return PrimitiveType(TokenType.BOOL)
+            case TokenType.LT | TokenType.GT | TokenType.LTE | TokenType.GTE:
+                if left_type not in {
+                    PrimitiveType(TokenType.INT),
+                    PrimitiveType(TokenType.FLOAT),
+                }:
+                    raise TypeError(
+                        f"Invalid operand types for {node.operator}: {left_type}"
+                    )
+
                 return PrimitiveType(TokenType.BOOL)
             # Logical operators
             case TokenType.LOGICAL_AND | TokenType.LOGICAL_OR:
@@ -155,7 +165,9 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         """
         symbol = self.analyzer.symbol_table.lookup(node.name, True)
         if not symbol:
-            raise NameError(f"Variable `{node.name}` not declared")
+            symbol = self.analyzer.symbol_table.lookup(node.name)
+            if not symbol or not isinstance(symbol.var_type, FunctionType):
+                raise NameError(f"Variable `{node.name}` not declared")
 
         return symbol.var_type
 
@@ -370,7 +382,7 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
             if self.analyzer.analyze(element) != element_type:
                 raise TypeError("Invalid element type in array literal")
 
-        return ArrayType(element_type)
+        return ArrayType(element_type, len(node.elements))
 
     def analyze_set_literal(self, node: SetLiteral) -> VarType:
         """Analyses a SetLiteral node, checking the element types.
