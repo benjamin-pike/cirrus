@@ -45,6 +45,9 @@ class StatementAnalyzer(StatementAnalyzerABC):
                 f"`{node.var_type}` != `{init_type}`"
             )
 
+        if isinstance(node.initializer, ArrayLiteral):
+            assert isinstance(node.var_type, ArrayType)
+            node.var_type.size = len(node.initializer.elements)
         if isinstance(node.var_type, SetType):
             if not self._is_hashable_type(node.var_type.element_type):
                 raise TypeError("Element type of set must be hashable")
@@ -72,6 +75,8 @@ class StatementAnalyzer(StatementAnalyzerABC):
         Raises:
             NameError: If the function is redeclared.
         """
+        if node.name == "_main":
+            raise NameError("Cannot declare function with reserved name `_main`")
         if self.analyzer.symbol_table.lookup(node.name, True):
             raise NameError(f'Cannot redeclare function "{node.name}"')
 

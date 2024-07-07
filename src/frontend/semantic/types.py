@@ -74,8 +74,9 @@ class ArrayType(VarType):
         element_type (VarType): The type of the elements in the array
     """
 
-    def __init__(self, element_type: VarType):
+    def __init__(self, element_type: VarType, size: int = 0):
         self.element_type = element_type
+        self.size = size
 
     def __repr__(self):
         return f"ArrayType({self.element_type})"

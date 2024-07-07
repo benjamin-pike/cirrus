@@ -10,8 +10,7 @@ from lib.helpers import is_iterable, pascal_to_snake_case
 
 
 class SemanticAnalyzer(SemanticAnalyzerABC):
-    """
-    The SemanticAnalyzer class performs semantic analysis
+    """The SemanticAnalyzer class performs semantic analysis
     by traversing the AST and ensuring that:\n
         1) All variables and functions are declared before use.\n
         2) Variables and functions are not redeclared or shadowed in lower scopes.\n
@@ -56,6 +55,8 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
             if not template_symbol:
                 raise NameError(f"Type {node_type.name} is not defined.")
             node_type = template_symbol.var_type
+
+        node.type = node_type
 
         return node_type
 

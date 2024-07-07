@@ -15,6 +15,14 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/repl.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Run Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "cwd": "${workspaceRoot}",
+            "console": "integratedTerminal"
         }
     ]
 }

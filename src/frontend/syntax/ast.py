@@ -1,11 +1,37 @@
-from typing import List, Optional, Union, Literal, Tuple
-from abc import ABC
+from typing import List, Optional, Type, Union, Literal, Tuple
+from abc import ABC, ABCMeta
 from frontend.lexer.tokens import TokenType
 from frontend.semantic.types import *
 
 
-class Node(ABC):
+class NodeMeta(ABCMeta):
+    """Metaclass for the Node classes"""
+
+    def __new__(
+        mcs: type["NodeMeta"],
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
+    ) -> Type["Node"]:
+        new_cls = super().__new__(mcs, name, bases, namespace)
+        init = new_cls.__init__
+
+        def extended_init(self: Any, *args: Any, **kwargs: Any) -> None:
+            init(self, *args, **kwargs)
+
+            self.id = str(id(self))
+            self.type = None
+
+        new_cls.__init__ = extended_init
+
+        return new_cls
+
+
+class Node(ABC, metaclass=NodeMeta):
     """Protocol representing a node in the AST."""
+
+    id: str
+    type: Optional[VarType] = None
 
     def __init__(self) -> None:
         pass
@@ -51,7 +77,7 @@ class VariableDeclaration(Statement):
         let x = 5;
     """
 
-    def __init__(self, name: str, var_type: VarType, initializer: Node) -> None:
+    def __init__(self, name: str, var_type: VarType, initializer: Expression) -> None:
         self.name = name
         self.var_type = var_type
         self.initializer = initializer
@@ -73,7 +99,7 @@ class ExpressionStatement(Statement):
         5 + 5;
     """
 
-    def __init__(self, expression: Node) -> None:
+    def __init__(self, expression: Expression) -> None:
         self.expression = expression
 
     def __repr__(self) -> str:
@@ -523,7 +549,9 @@ class BinaryExpression(Expression):
         right (Expression): The right operand of the binary expression.
     """
 
-    def __init__(self, left: Node, operator: TokenType, right: Node) -> None:
+    def __init__(
+        self, left: Expression, operator: TokenType, right: Expression
+    ) -> None:
         self.left = left
         self.operator = operator
         self.right = right
@@ -540,7 +568,7 @@ class AssignmentExpression(Expression):
         right (Node): The right operand of the assignment expression.
     """
 
-    def __init__(self, left: Node, right: Node) -> None:
+    def __init__(self, left: Expression, right: Expression) -> None:
         self.left = left
         self.right = right
 
