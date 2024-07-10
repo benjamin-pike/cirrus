@@ -263,7 +263,7 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
             TypeError: If the object type does not have the member.
         """
         obj_type = self.analyzer.analyze(node.obj)
-        if not isinstance(obj_type, (SetType, MapType, TemplateType)):
+        if not isinstance(obj_type, CompositeType):
             raise TypeError(f"Type `{obj_type}` does not have members")
         member_type = obj_type.attributes.get(node.member.name)
 
@@ -289,7 +289,7 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
             TypeError: If the argument types do not match the method declaration.
         """
         obj_type = self.analyzer.analyze(node.obj)
-        if not isinstance(obj_type, (SetType, MapType, TemplateType)):
+        if not isinstance(obj_type, CompositeType):
             raise TypeError(f"Type `{obj_type}` does not have methods")
         method_type = obj_type.methods.get(node.method.name)
 

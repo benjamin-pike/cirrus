@@ -150,8 +150,19 @@ class StatementGenerator(StatementGeneratorABC):
         index_var = self.generator.builder.alloca(IRType.int(32), name="index")
         self.generator.builder.store(ir.Constant(IRType.int(32), 0), index_var)
 
-        array_ptr = self.generator.generate_expression(node.iterable)
-        array_length = ir.Constant(IRType.int(32), array_ptr.type.pointee.count)
+        array_struct_ptr = self.generator.generate_expression(node.iterable)
+
+        size_ptr = self.generator.builder.gep(
+            array_struct_ptr,
+            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)],
+        )
+        array_length = self.generator.builder.load(size_ptr, name="array_length")
+
+        data_field_ptr = self.generator.builder.gep(
+            array_struct_ptr,
+            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 2)],
+        )
+        data_ptr = self.generator.builder.load(data_field_ptr, name="data_ptr")
 
         loop_cond_block = self.generator.func.append_basic_block(name="each.cond")
         self.generator.builder.branch(loop_cond_block)
@@ -169,11 +180,9 @@ class StatementGenerator(StatementGeneratorABC):
 
         self.generator.builder.position_at_end(loop_body_block)
 
-        element_ptr = self.generator.builder.gep(
-            array_ptr, [ir.Constant(IRType.int(32), 0), index_val]
+        self.generator.symbol_table[node.variable] = self.generator.builder.gep(
+            data_ptr, [index_val]
         )
-
-        self.generator.symbol_table[node.variable] = element_ptr
 
         self.generate_block_statement(node.body)
 

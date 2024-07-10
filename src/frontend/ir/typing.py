@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from llvmlite import ir
+from llvmlite import ir, binding as llvm
 from frontend.syntax.ast import *
 
 
@@ -100,6 +100,8 @@ class IRGeneratorABC(ABC):
     builder: ir.IRBuilder
     func: ir.Function
     block: ir.Block
+
+    target_data: llvm.TargetData
 
     statement_generator: StatementGeneratorABC
     expression_generator: ExpressionGeneratorABC

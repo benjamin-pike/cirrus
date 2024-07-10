@@ -6,7 +6,7 @@
 
 
 from llvmlite import ir
-from frontend.ir.helpers import get_ir_type
+from frontend.ir.composites.arrays import ArrayGenerator
 from frontend.ir.typing import ExpressionGeneratorABC, IRGeneratorABC
 from frontend.ir.types import *
 from frontend.syntax.ast import *
@@ -20,6 +20,7 @@ class ExpressionGenerator(ExpressionGeneratorABC):
 
     def __init__(self, generator: IRGeneratorABC):
         self.generator = generator
+        self.array_generator = ArrayGenerator(generator)
 
     def generate_numeric_literal(self, node: NumericLiteral) -> ir.Value:
         """Generate LLVM IR for a numeric literal.
@@ -83,22 +84,9 @@ class ExpressionGenerator(ExpressionGeneratorABC):
             node (ArrayLiteral): The array literal node
 
         Returns:
-            ir.Value: The LLVM IR value (pointer to array)
+            ir.Value: The LLVM IR value (pointer to array struct)
         """
-        # FIX: Change arrays to store elements as pointers
-        array_type = get_ir_type(node.type).pointee
-        array_ptr = self.generator.builder.alloca(array_type)
-
-        for i, element in enumerate(node.elements):
-            element_ptr = self.generator.builder.gep(
-                array_ptr,
-                [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), i)],
-            )
-            self.generator.builder.store(
-                self.generator.generate_expression(element), element_ptr
-            )
-
-        return array_ptr
+        return self.array_generator.generate_array_literal(node)
 
     def generate_identifier(self, node: Identifier) -> ir.Value:
         """Generate LLVM IR for an identifier.
@@ -272,12 +260,16 @@ class ExpressionGenerator(ExpressionGeneratorABC):
         Returns:
             ir.Value: The LLVM IR value of the indexed element
         """
-        array = self.generator.generate_expression(node.array)
+        array_struct_ptr = self.generator.generate_expression(node.array)
         index = self.generator.generate_expression(node.index)
 
-        element_ptr = self.generator.builder.gep(
-            array, [ir.Constant(IRType.int(32), 0), index]
+        data_field_ptr = self.generator.builder.gep(
+            array_struct_ptr,
+            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 2)],
         )
+        data_ptr = self.generator.builder.load(data_field_ptr)
+
+        element_ptr = self.generator.builder.gep(data_ptr, [index])
 
         return self.generator.builder.load(element_ptr)
 
@@ -302,6 +294,20 @@ class ExpressionGenerator(ExpressionGeneratorABC):
             args.append(generated)
 
         return self.generator.builder.call(callee, args)
+
+    def generate_method_call_expression(self, node: MethodCallExpression) -> ir.Value:
+        """Generate LLVM IR for a method call expression.
+
+        Args:
+            node (MethodCallExpression): The method call expression node
+
+        Returns:
+            ir.Value: The LLVM IR value of the method call result
+        """
+        if isinstance(node.obj.type, ArrayType):
+            return self.array_generator.generate_array_method_call(node)
+
+        raise NotImplementedError("Method call expression not implemented")
 
     # Helper methods
     def _compare_strings(
