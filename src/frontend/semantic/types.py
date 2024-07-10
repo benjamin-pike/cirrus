@@ -7,6 +7,7 @@ class VarType(ABC):
     """Abstract class for all types"""
 
 
+# Primitive and function types
 class PrimitiveType(VarType):
     """Represents primitive types
 
@@ -67,7 +68,15 @@ class FunctionType(VarType):
         return hash(self.__repr__())
 
 
-class ArrayType(VarType):
+# Composite types
+class CompositeType(VarType):
+    """Abstract class for composite types"""
+
+    attributes: Dict[str, VarType]
+    methods: Dict[str, FunctionType]
+
+
+class ArrayType(CompositeType):
     """Represents array types
 
     Args:
@@ -77,6 +86,18 @@ class ArrayType(VarType):
     def __init__(self, element_type: VarType, size: int = 0):
         self.element_type = element_type
         self.size = size
+        self.attributes = {}
+        self.methods = {
+            "push": FunctionType(self, [("element", element_type)]),
+            "pop": FunctionType(element_type, []),
+            "insert": FunctionType(
+                self,
+                [("index", PrimitiveType(TokenType.INT)), ("element", element_type)],
+            ),
+            "extract": FunctionType(
+                element_type, [("index", PrimitiveType(TokenType.INT))]
+            ),
+        }
 
     def __repr__(self):
         return f"ArrayType({self.element_type})"
@@ -91,7 +112,7 @@ class ArrayType(VarType):
         return hash(self.__repr__())
 
 
-class SetType(VarType):
+class SetType(CompositeType):
     """Represents set types
 
     Args:
@@ -124,7 +145,7 @@ class SetType(VarType):
         return hash(self.__repr__())
 
 
-class MapType(VarType):
+class MapType(CompositeType):
     """Represents map types
 
     Args:
@@ -162,6 +183,7 @@ class MapType(VarType):
         return hash(self.__repr__())
 
 
+# Custom types
 class CustomTypeIdentifier(VarType):
     """Represents template identifiers
 
@@ -185,7 +207,7 @@ class CustomTypeIdentifier(VarType):
         return hash(self.__repr__())
 
 
-class TemplateType(VarType):
+class TemplateType(CompositeType):
     """Represents template types
 
     Args:

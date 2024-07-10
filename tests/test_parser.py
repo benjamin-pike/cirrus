@@ -223,6 +223,32 @@ def test_array_indexing():
     check(code, expected)
 
 
+def test_array_method_call():
+    code = """
+        int[] x = [1, 2, 3];
+        x.push(4).pop();
+    """
+    expected = Program(
+        [
+            VariableDeclaration(
+                "x",
+                ArrayType(PrimitiveType(TokenType.INT)),
+                ArrayLiteral([NumericLiteral(1), NumericLiteral(2), NumericLiteral(3)]),
+            ),
+            ExpressionStatement(
+                MethodCallExpression(
+                    MethodCallExpression(
+                        Identifier("x"), Identifier("push"), [NumericLiteral(4)]
+                    ),
+                    Identifier("pop"),
+                    [],
+                )
+            ),
+        ]
+    )
+    check(code, expected)
+
+
 def test_combined_array_example():
     code = """
         int[] arr = [1, 2, 3];
@@ -934,7 +960,8 @@ def test_member_access_expression():
         ]
     )
     check(code, excepted)
-    
+
+
 def test_property_assignment_expression():
     code = """
         foo.bar.baz.qux = 5;
@@ -945,7 +972,9 @@ def test_property_assignment_expression():
                 AssignmentExpression(
                     MemberAccessExpression(
                         MemberAccessExpression(
-                            MemberAccessExpression(Identifier("foo"), Identifier("bar")),
+                            MemberAccessExpression(
+                                Identifier("foo"), Identifier("bar")
+                            ),
                             Identifier("baz"),
                         ),
                         Identifier("qux"),

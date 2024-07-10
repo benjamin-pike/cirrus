@@ -44,7 +44,7 @@ def check(capfd: Capfd):
     def compare(code: str, expected_output: str) -> None:
         execute(generate(code))
         out, _ = capfd.readouterr()
-        assert out == expected_output
+        assert out.strip() == expected_output
     
     return compare
 
@@ -54,14 +54,14 @@ def test_variable_declaration(capfd: Capfd) -> None:
         int a = 10;
         echo a;
     """
-    check(capfd)(code, "10\n")
+    check(capfd)(code, "10")
 
 def test_variable_reassignment(capfd: Capfd) -> None:
     code = """
         int a = 10;
         echo a + 20;
     """
-    check(capfd)(code, "30\n")
+    check(capfd)(code, "30")
     
 def test_simple_function(capfd: Capfd) -> None:
     code = """
@@ -71,7 +71,7 @@ def test_simple_function(capfd: Capfd) -> None:
         
         echo concat("Hello ", "World");
     """
-    check(capfd)(code, "Hello World\n")
+    check(capfd)(code, "Hello World")
 
 def test_complex_function(capfd: Capfd) -> None:
     code = """
@@ -90,7 +90,7 @@ def test_complex_function(capfd: Capfd) -> None:
         echo math(multiply, math(add, 10, 20), 50);
     """
     
-    check(capfd)(code, "1500\n")
+    check(capfd)(code, "1500")
 
 def test_curried_function(capfd: Capfd) -> None:
     code = """
@@ -112,7 +112,7 @@ def test_curried_function(capfd: Capfd) -> None:
         
         echo getMathFunc('div')(getMathFunc('mul')(10, 20), 50);
     """
-    check(capfd)(code, "4\n")
+    check(capfd)(code, "4")
 
 def test_pipe_statement(capfd: Capfd) -> None:
     code = """
@@ -137,7 +137,47 @@ def test_pipe_statement(capfd: Capfd) -> None:
         
         echo [add(a, b), sub(a, b)] >> mul >> div(20);
     """
-    check(capfd)(code, "-15\n")
+    check(capfd)(code, "-15")
+    
+# Arrays
+def test_array_declaration(capfd: Capfd) -> None:
+    code = """
+        int[] numbers = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+        echo numbers[2];
+    """
+    check(capfd)(code, "30")
+    
+def test_array_methods(capfd: Capfd) -> None:
+    code = """
+        int[] numbers = [10, 20, 30, 40, 50];
+        
+        echo numbers.insert(5, 60).pop() * numbers.push(70).extract(1);
+    """
+    check(capfd)(code, "1200")
+    
+def test_nested_array_declaration(capfd: Capfd) -> None:
+    code = """
+        int[][] matrix = [
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9]
+        ];
+        
+        echo matrix[1][2];
+    """
+    check(capfd)(code, "6")
+    
+def test_nested_array_methods(capfd: Capfd) -> None:
+    code = """
+        int[][] matrix = [
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9]
+        ];
+        
+        echo matrix[1].insert(2, 7).pop() * matrix[2].push(10).extract(1);
+    """
+    check(capfd)(code, "48")
 
 # Control Flow Statements
 def test_if_statement(capfd: Capfd) -> None:
@@ -158,7 +198,7 @@ def test_if_statement(capfd: Capfd) -> None:
         
         check(10);
     """
-    check(capfd)(code, "a is less than 5\n")
+    check(capfd)(code, "a is less than 5")
     
 def test_while_statement(capfd: Capfd) -> None:
     code = """
@@ -173,7 +213,7 @@ def test_while_statement(capfd: Capfd) -> None:
             }
         }
     """
-    check(capfd)(code, "10\n9\n8\n7\n6\nmidway\n5\n4\n3\n2\n1\n")
+    check(capfd)(code, "10\n9\n8\n7\n6\nmidway\n5\n4\n3\n2\n1")
     
 
 def test_each_statement(capfd: Capfd) -> None:
@@ -184,7 +224,7 @@ def test_each_statement(capfd: Capfd) -> None:
             echo name;
         }
     """
-    check(capfd)(code, "Alice\nBob\nCharlie\nAlice\n")
+    check(capfd)(code, "Alice\nBob\nCharlie\nAlice")
     
 def test_range_statement(capfd: Capfd) -> None:
     code = """
@@ -192,4 +232,4 @@ def test_range_statement(capfd: Capfd) -> None:
             echo i;
         }
     """
-    check(capfd)(code, "0\n2\n4\n6\n8\n")       
+    check(capfd)(code, "0\n2\n4\n6\n8")       

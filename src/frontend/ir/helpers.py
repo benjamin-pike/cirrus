@@ -1,3 +1,5 @@
+# pyright: reportUnknownArgumentType=false
+
 from typing import Union
 
 from llvmlite import ir
@@ -38,9 +40,15 @@ def get_ir_type(var_type: Union[VarType, None]) -> ir.Type:
                     f"IR generation for '{var_type.primitive}' not implemented."
                 )
     if isinstance(var_type, ArrayType):
-        return ir.ArrayType(
-            get_ir_type(var_type.element_type), var_type.size
-        ).as_pointer()
+        element_ty = get_ir_type(var_type.element_type)
+        array_struct_type = ir.LiteralStructType(
+            [
+                ir.IntType(32),  # size
+                ir.IntType(32),  # capacity
+                element_ty.as_pointer(),  # data
+            ]
+        )
+        return array_struct_type.as_pointer()
     if isinstance(var_type, FunctionType):
         return ir.FunctionType(
             get_ir_type(var_type.return_type),

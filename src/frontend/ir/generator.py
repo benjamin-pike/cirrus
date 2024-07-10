@@ -1,4 +1,5 @@
 # pyright: reportAttributeAccessIssue=false
+# pyright: reportUnknownMemberType=false
 
 from llvmlite import ir, binding as llvm
 
@@ -23,10 +24,10 @@ class IRGenerator(IRGeneratorABC):
 
         self.module = ir.Module(name="main_module")
         self.module.triple = llvm.get_default_triple()
+        self.target_data = llvm.create_target_data(self.module.data_layout)
 
         self.func = ir.Function(self.module, ir.FunctionType(IRType.void(), []), "main")
-        self.block = self.func.append_basic_block(name="entry")
-        self.builder = ir.IRBuilder(self.block)
+        self.builder = ir.IRBuilder(self.func.append_basic_block(name="entry"))
 
         self.statement_generator = StatementGenerator(self)
         self.expression_generator = ExpressionGenerator(self)
@@ -38,6 +39,7 @@ class IRGenerator(IRGeneratorABC):
         self._declare_fmt_specifiers()
         self._declare_c_str_funcs()
         self._declare_c_memory_funcs()
+        self._declare_c_exit()
 
     def generate_program(self, node: Program) -> ir.Module:
         """Generate LLVM IR for a program.
@@ -129,6 +131,16 @@ class IRGenerator(IRGeneratorABC):
             global_format_str.initializer = c_format_str
 
     def _declare_c_memory_funcs(self) -> None:
-        """Declare C memory functions (malloc) in the LLVM module."""
+        """Declare C memory functions in the LLVM module."""
         malloc_ty = ir.FunctionType(IRType.int(8).as_pointer(), [IRType.int(32)])
         ir.Function(self.module, malloc_ty, name="malloc")
+
+        realloc_ty = ir.FunctionType(
+            IRType.int(8).as_pointer(), [IRType.int(8).as_pointer(), IRType.int(32)]
+        )
+        ir.Function(self.module, realloc_ty, name="realloc")
+
+    def _declare_c_exit(self) -> None:
+        """Declare the exit function in the LLVM module."""
+        exit_ty = ir.FunctionType(IRType.void(), [IRType.int(32)])
+        ir.Function(self.module, exit_ty, name="exit")
