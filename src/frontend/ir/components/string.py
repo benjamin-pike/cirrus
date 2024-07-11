@@ -1,17 +1,16 @@
 # pyright: reportReturnType=false
 # pyright: reportAttributeAccessIssue=false
 # pyright: reportUnknownArgumentType=false
-# pyright: reportUnknownVariableType=false
 # pyright: reportUnknownMemberType=false
 
 
 from llvmlite import ir
 from frontend.ir.types import IRType
-from frontend.ir.typing import IRGeneratorABC
+from frontend.ir.typing import IRGeneratorABC, StringGeneratorABC
 from frontend.syntax.ast import StringLiteral
 
 
-class StringGenerator:
+class StringGenerator(StringGeneratorABC):
     """Generates LLVM IR for string literals and associated operations."""
 
     def __init__(self, generator: IRGeneratorABC):
@@ -31,9 +30,7 @@ class StringGenerator:
             ir.ArrayType(IRType.int(8), len(str_val)), bytearray(str_val)
         )
 
-        str_global = ir.GlobalVariable(
-            self.generator.module, str_const.type, name=node.id
-        )
+        str_global = ir.GlobalVariable(self.generator.module, str_const.type, node.id)
         str_global.linkage = "internal"
         str_global.global_constant = True
         str_global.initializer = str_const
@@ -55,9 +52,7 @@ class StringGenerator:
         """
 
         strcmp_res = self.generator.builder.call(
-            self.generator.module.get_global("strcmp"),
-            [left, right],
-            name=f"str_cmp_{cmp_op}",
+            self.generator.module.get_global("strcmp"), [left, right]
         )
 
         return self.generator.builder.icmp_signed(
@@ -77,10 +72,10 @@ class StringGenerator:
             ir.Value: The pointer to the concatenated string
         """
         left_len = self.generator.builder.call(
-            self.generator.module.get_global("strlen"), [left], name="left_len"
+            self.generator.module.get_global("strlen"), [left]
         )
         right_len = self.generator.builder.call(
-            self.generator.module.get_global("strlen"), [right], name="right_len"
+            self.generator.module.get_global("strlen"), [right]
         )
 
         total_len = self.generator.builder.add(left_len, right_len)
@@ -89,19 +84,15 @@ class StringGenerator:
         )
 
         concat_str = self.generator.builder.call(
-            self.generator.module.get_global("malloc"), [total_len], name="concat_str"
+            self.generator.module.get_global("malloc"), [total_len]
         )
 
         self.generator.builder.call(
-            self.generator.module.get_global("strcpy"),
-            [concat_str, left],
-            name="copy_left",
+            self.generator.module.get_global("strcpy"), [concat_str, left]
         )
 
         self.generator.builder.call(
-            self.generator.module.get_global("strcat"),
-            [concat_str, right],
-            name="concat_right",
+            self.generator.module.get_global("strcat"), [concat_str, right]
         )
 
         return concat_str

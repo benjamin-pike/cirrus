@@ -5,13 +5,7 @@ from frontend.syntax.ast import *
 
 
 class Symbol(SymbolABC):
-    """
-    Represents a symbol in the symbol table.
-
-    Attributes:
-        name (str): The name of the symbol.
-        var_type (VarType): The type of the symbol.
-    """
+    """Represents a symbol in the symbol table."""
 
     def __init__(self, name: str, var_type: VarType) -> None:
         self.name = name
@@ -22,14 +16,7 @@ class Symbol(SymbolABC):
 
 
 class Scope(ScopeABC):
-    """
-    Represents a scope in the symbol table.
-
-    Attributes:
-        symbols (Dict[str, Symbol]): A dictionary mapping names to symbols.
-        parent_node (Optional[Node]): The parent node of the scope, if any.
-        reachable (bool): True if the scope is reachable, otherwise False.
-    """
+    """Represents a scope in the symbol table."""
 
     def __init__(self, parent_node: Optional[Node] = None) -> None:
         self.symbols: Dict[str, SymbolABC] = {}
@@ -44,62 +31,27 @@ class Scope(ScopeABC):
 
 
 class SymbolTable(SymbolTableABC):
-    """
-    Represents a symbol table for managing variables and functions.
-
-    Attributes:
-        scopes (List[Scope]): A stack of scopes.
-    """
+    """Represents a symbol table for managing variables and functions."""
 
     def __init__(self) -> None:
-        """Initializes the symbol table with an empty global scope."""
         self.scopes: List[ScopeABC] = [Scope()]
 
     def enter_scope(self, parent_node: Optional[Node] = None) -> None:
-        """Enters a new scope, optionally as a function scope.
-
-        Args:
-            parent_node (Optional[Statement]): The parent node of the scope.
-        """
         self.scopes.append(Scope(parent_node))
 
     def exit_scope(self) -> None:
-        """Exits the current scope by popping it off the scope stack.
-
-        Raises:
-            IndexError: If attempting to exit the global scope.
-        """
         if len(self.scopes) > 1:
             self.scopes.pop()
         else:
             raise IndexError("Cannot exit the global scope")
 
     def define(self, name: str, var_type: VarType) -> None:
-        """Adds a symbol to the current scope.
-
-        Args:
-            name (str): The name of the symbol.
-            var_type (VarType): The type of the symbol.
-
-        Raises:
-            KeyError: If the symbol is already declared in the current scope.
-        """
         current_scope = self.scopes[-1]
         if name in current_scope.symbols:
             raise KeyError(f"Symbol {name} already declared in the current scope")
         current_scope.symbols[name] = Symbol(name, var_type)
 
     def lookup(self, name: str, limit_to_function: bool = False) -> Optional[SymbolABC]:
-        """Looks up a symbol by name, starting from the innermost scope.
-
-        Args:
-            name (str): The name of the symbol to lookup.
-            limit_to_function (bool):
-                If True, only search up to the nearest function scope.
-
-        Returns:
-            Optional[Symbol]: The symbol if found, otherwise None.
-        """
         for scope in reversed(self.scopes):
             if name in scope.symbols:
                 return scope.symbols[name]
@@ -109,14 +61,6 @@ class SymbolTable(SymbolTableABC):
         return None
 
     def get_scope(self, symbol: SymbolABC) -> Optional[ScopeABC]:
-        """Gets the scope containing the given symbol.
-
-        Args:
-            symbol (Symbol): The symbol to look up.
-
-        Returns:
-            Optional[Scope]: The scope containing the symbol if found, otherwise None.
-        """
         for scope in reversed(self.scopes):
             if symbol in scope.symbols.values():
                 return scope
@@ -124,11 +68,6 @@ class SymbolTable(SymbolTableABC):
         return None
 
     def get_current_function_type(self) -> Optional[FunctionType]:
-        """Gets the function type of the current function scope, if any.
-
-        Returns:
-            Optional[FunctionType]: The function type if in a function, otherwise None.
-        """
         for scope in reversed(self.scopes):
             if isinstance(scope.parent_node, FunctionDeclaration):
                 return scope.parent_node.function_type
@@ -138,12 +77,6 @@ class SymbolTable(SymbolTableABC):
         return None
 
     def is_loop_scope(self) -> bool:
-        """Checks if the current scope is within a loop.
-
-        Returns:
-            bool: True if the current scope is within a loop, otherwise False.
-        """
-
         for scope in reversed(self.scopes):
             if scope.parent_node and isinstance(scope.parent_node, FunctionDeclaration):
                 return False
@@ -155,12 +88,6 @@ class SymbolTable(SymbolTableABC):
         return False
 
     def is_reachable(self) -> bool:
-        """Checks if the current scope is reachable.
-
-        Returns:
-            bool: True if the current scope is reachable, otherwise False.
-        """
-
         for scope in reversed(self.scopes):
             if not scope.reachable:
                 return False
@@ -168,6 +95,4 @@ class SymbolTable(SymbolTableABC):
         return True
 
     def set_unreachable(self) -> None:
-        """Marks the current scope as unreachable."""
-
         self.scopes[-1].reachable = False

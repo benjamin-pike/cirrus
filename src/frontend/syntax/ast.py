@@ -28,27 +28,18 @@ class NodeMeta(ABCMeta):
 
 
 class Node(ABC, metaclass=NodeMeta):
-    """Protocol representing a node in the AST."""
+    """Abstract base class for all nodes in the AST."""
 
     id: str
     type: Optional[VarType] = None
 
-    def __init__(self) -> None:
-        pass
-
 
 class Statement(Node):
-    """Protocol representing a statement node in the AST."""
-
-    def __init__(self) -> None:
-        pass
+    """Abstract base class for all statement nodes in the AST."""
 
 
 class Expression(Node):
-    """Protocol representing an expression node in the AST."""
-
-    def __init__(self) -> None:
-        pass
+    """Abstract base class for all expression nodes in the AST."""
 
 
 # Program
@@ -630,33 +621,33 @@ class MemberAccessExpression(Expression):
     """Node representing a member access expression.
 
     Args:
-        obj (Expression): The object to access the member from.
+        composite (Expression): The compositeect to access the member from.
         member (Identifier): The member to be accessed.
     """
 
-    def __init__(self, obj: Expression, member: Identifier) -> None:
-        self.obj = obj
+    def __init__(self, composite: Expression, member: Identifier) -> None:
+        self.composite = composite
         self.member = member
 
     def __repr__(self) -> str:
-        return f"MemberAccess({self.obj}, {self.member})"
+        return f"MemberAccess({self.composite}, {self.member})"
 
 
 class MethodCallExpression(Expression):
     """Node representing a method call expression.
 
     Args:
-        obj (Expression): The object to call the method on.
+        composite (Expression): The compositeect to call the method on.
         method (Identifier): The method to be called.
         args (List[Expression]): The arguments to be passed to the method.
     """
 
     def __init__(
-        self, obj: Expression, method: Identifier, args: List[Expression]
+        self, composite: Expression, method: Identifier, args: List[Expression]
     ) -> None:
-        self.obj = obj
+        self.composite = composite
         self.method = method
         self.args = args
 
     def __repr__(self) -> str:
-        return f"MethodCall({self.obj}, {self.method}, {self.args})"
+        return f"MethodCall({self.composite}, {self.method}, {self.args})"

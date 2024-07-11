@@ -1,4 +1,3 @@
-# pyright: reportReturnType=false
 # pyright: reportArgumentType=false
 # pyright: reportAttributeAccessIssue=false
 # pyright: reportUnknownArgumentType=false
@@ -8,11 +7,11 @@
 from llvmlite import ir
 from frontend.ir.helpers import get_ir_type
 from frontend.ir.types import IRType
-from frontend.ir.typing import IRGeneratorABC
+from frontend.ir.typing import ArrayGeneratorABC, IRGeneratorABC
 from frontend.syntax.ast import *
 
 
-class ArrayGenerator:
+class ArrayGenerator(ArrayGeneratorABC):
     """Generates LLVM IR for array literals and associated methods."""
 
     def __init__(self, generator: IRGeneratorABC):
@@ -32,8 +31,8 @@ class ArrayGenerator:
 
         array_struct_type = ir.LiteralStructType(
             [
-                ir.IntType(32),  # size
-                ir.IntType(32),  # capacity
+                IRType.int(32),  # size
+                IRType.int(32),  # capacity
                 element_type.as_pointer(),  # data pointer to element_type
             ]
         )
@@ -48,8 +47,8 @@ class ArrayGenerator:
         malloc_func = self.generator.module.get_global("malloc")
         initial_capacity = max(4, len(node.elements))
         total_size = self.generator.builder.mul(
-            ir.Constant(ir.IntType(32), initial_capacity),
-            ir.Constant(ir.IntType(32), element_size),
+            ir.Constant(IRType.int(32), initial_capacity),
+            ir.Constant(IRType.int(32), element_size),
         )
         data_array_ptr = self.generator.builder.bitcast(
             self.generator.builder.call(malloc_func, [total_size]),
@@ -59,7 +58,7 @@ class ArrayGenerator:
         # Initialize array data
         for i, element in enumerate(node.elements):
             element_ptr = self.generator.builder.gep(
-                data_array_ptr, [ir.Constant(ir.IntType(32), i)]
+                data_array_ptr, [ir.Constant(IRType.int(32), i)]
             )
             self.generator.builder.store(
                 self.generator.generate_expression(element), element_ptr
@@ -83,7 +82,7 @@ class ArrayGenerator:
 
         data_field_ptr = self.generator.builder.gep(
             array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 2)],
+            [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), 2)],
         )
         data_ptr = self.generator.builder.load(data_field_ptr)
 
@@ -100,7 +99,7 @@ class ArrayGenerator:
         Returns:
             ir.Value: The LLVM IR value of the method call result
         """
-        array = self.generator.generate_expression(node.obj)
+        array = self.generator.generate_expression(node.composite)
         method = node.method.name
 
         match method:
@@ -130,7 +129,7 @@ class ArrayGenerator:
         data_ptr_val = self.generator.builder.load(data_ptr)
         element_val = self.generator.generate_expression(element)
 
-        new_size = self.generator.builder.add(size, ir.Constant(ir.IntType(32), 1))
+        new_size = self.generator.builder.add(size, ir.Constant(IRType.int(32), 1))
         self.generator.builder.store(new_size, size_ptr)
         new_element_ptr = self.generator.builder.gep(data_ptr_val, [size])
         self.generator.builder.store(element_val, new_element_ptr)
@@ -145,7 +144,7 @@ class ArrayGenerator:
 
         self._validate_not_empty(size)
 
-        new_size = self.generator.builder.sub(size, ir.Constant(ir.IntType(32), 1))
+        new_size = self.generator.builder.sub(size, ir.Constant(IRType.int(32), 1))
         last_element_ptr = self.generator.builder.gep(data_ptr_val, [new_size])
         last_element_val = self.generator.builder.load(last_element_ptr)
 
@@ -177,7 +176,7 @@ class ArrayGenerator:
         insert_ptr = self.generator.builder.gep(data_ptr_val, [index_val])
         self.generator.builder.store(element_val, insert_ptr)
 
-        new_size = self.generator.builder.add(size, ir.Constant(ir.IntType(32), 1))
+        new_size = self.generator.builder.add(size, ir.Constant(IRType.int(32), 1))
         self.generator.builder.store(new_size, size_ptr)
 
         return array_struct_ptr
@@ -211,7 +210,7 @@ class ArrayGenerator:
         # Shift elements to the left
         self._shift_elements(data_ptr_val, size, index_val, "left")
 
-        new_size = self.generator.builder.sub(size, ir.Constant(ir.IntType(32), 1))
+        new_size = self.generator.builder.sub(size, ir.Constant(IRType.int(32), 1))
         self.generator.builder.store(new_size, size_ptr)
 
         return element_val
@@ -222,41 +221,41 @@ class ArrayGenerator:
     ):
         size_ptr = self.generator.builder.gep(
             array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)],
+            [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), 0)],
         )
         self.generator.builder.store(
-            ir.Constant(ir.IntType(32), initial_size), size_ptr
+            ir.Constant(IRType.int(32), initial_size), size_ptr
         )
 
         capacity_ptr = self.generator.builder.gep(
             array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 1)],
+            [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), 1)],
         )
         initial_capacity = max(4, initial_size)
         self.generator.builder.store(
-            ir.Constant(ir.IntType(32), initial_capacity), capacity_ptr
+            ir.Constant(IRType.int(32), initial_capacity), capacity_ptr
         )
 
     def _store_data_pointer(self, array_struct_ptr: ir.Value, data_array_ptr: ir.Value):
         data_ptr = self.generator.builder.bitcast(data_array_ptr, data_array_ptr.type)
         data_field_ptr = self.generator.builder.gep(
             array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 2)],
+            [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), 2)],
         )
         self.generator.builder.store(data_ptr, data_field_ptr)
 
     def _load_array_fields(self, array_struct_ptr: ir.Value):
         size_ptr = self.generator.builder.gep(
             array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)],
+            [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), 0)],
         )
         capacity_ptr = self.generator.builder.gep(
             array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 1)],
+            [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), 1)],
         )
         data_field_ptr = self.generator.builder.gep(
             array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 2)],
+            [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), 2)],
         )
         return size_ptr, capacity_ptr, data_field_ptr
 
@@ -269,7 +268,7 @@ class ArrayGenerator:
         # Error handling block
         self.generator.builder.position_at_end(error_block)
         self.generator.builder.call(
-            self.generator.module.get_global("exit"), [ir.Constant(ir.IntType(32), 1)]
+            self.generator.module.get_global("exit"), [ir.Constant(IRType.int(32), 1)]
         )
         self.generator.builder.unreachable()
 
@@ -278,7 +277,7 @@ class ArrayGenerator:
 
     def _validate_not_empty(self, size: ir.Value):
         is_empty = self.generator.builder.icmp_signed(
-            "==", size, ir.Constant(ir.IntType(32), 0)
+            "==", size, ir.Constant(IRType.int(32), 0)
         )
 
         # Create basic blocks for conditional branching
@@ -291,7 +290,7 @@ class ArrayGenerator:
         # Error handling block
         self.generator.builder.position_at_end(error_block)
         self.generator.builder.call(
-            self.generator.module.get_global("exit"), [ir.Constant(ir.IntType(32), 1)]
+            self.generator.module.get_global("exit"), [ir.Constant(IRType.int(32), 1)]
         )
         self.generator.builder.unreachable()
 
@@ -314,10 +313,10 @@ class ArrayGenerator:
             element_type = data_ptr.type.pointee
             element_size = element_type.get_abi_size(self.generator.target_data)
             new_capacity = self.generator.builder.mul(
-                capacity, ir.Constant(ir.IntType(32), 2)
+                capacity, ir.Constant(IRType.int(32), 2)
             )
             new_capacity_bytes = self.generator.builder.mul(
-                new_capacity, ir.Constant(ir.IntType(32), element_size)
+                new_capacity, ir.Constant(IRType.int(32), element_size)
             )
             realloc_func = self.generator.module.get_global("realloc")
             new_data_ptr_casted = self.generator.builder.call(
@@ -359,7 +358,7 @@ class ArrayGenerator:
             loop_cond = self.generator.builder.icmp_signed(
                 "<",
                 loop_index_val,
-                self.generator.builder.sub(size, ir.Constant(ir.IntType(32), 1)),
+                self.generator.builder.sub(size, ir.Constant(IRType.int(32), 1)),
             )
 
         self.generator.builder.cbranch(loop_cond, loop_body_block, loop_end_block)

@@ -15,24 +15,22 @@ class IRGenerator(IRGeneratorABC):
     """The IRGenerator class generates LLVM intermediate representation (IR) code
     from an AST. It traverses the AST and generates IR for each node in the AST."""
 
+    symbol_table = {}
+
     def __init__(self):
-        """Initialises the LLVM IR generator, set up the module, builder, and
-        main function scope, and declare necessary auxillary functions."""
         llvm.initialize()
         llvm.initialize_native_target()
         llvm.initialize_native_asmprinter()
 
-        self.module = ir.Module(name="main_module")
+        self.module = ir.Module()
         self.module.triple = llvm.get_default_triple()
         self.target_data = llvm.create_target_data(self.module.data_layout)
 
         self.func = ir.Function(self.module, ir.FunctionType(IRType.void(), []), "main")
-        self.builder = ir.IRBuilder(self.func.append_basic_block(name="entry"))
+        self.builder = ir.IRBuilder(self.func.append_basic_block())
 
         self.statement_generator = StatementGenerator(self)
         self.expression_generator = ExpressionGenerator(self)
-
-        self.symbol_table = {}
 
         # Auxillary functions
         self._declare_printf()

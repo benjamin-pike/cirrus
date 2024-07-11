@@ -6,28 +6,12 @@ from frontend.syntax.ast import *
 
 
 class ExpressionParser(ExpressionParserABC):
-    """
-    The ExpressionParser class parses expressions
-    from a list of tokens using the provided parser.
-
-    Attributes:
-        parser (ParserABC): The main parser instance.
-    """
+    """Parses AST expression nodes from a list of tokens."""
 
     def __init__(self, parser: ParserABC) -> None:
-        """Initialises the ExpressionParser with the main parser instance.
-
-        Args:
-            parser (ParserABC): The main parser instance.
-        """
         self.parser = parser
 
     def parse_expression(self) -> Expression:
-        """Parses a general expression.
-
-        Returns:
-            Expression: The parsed expression.
-        """
         if self.parser.current().token_type == TokenType.LBRACKET:
             return self.parse_array_literal()
         if self.parser.current().token_type == TokenType.LBRACE:
@@ -38,18 +22,6 @@ class ExpressionParser(ExpressionParserABC):
         return self.parse_assignment_expression()
 
     def parse_assignment_expression(self) -> Expression:
-        """Parses an assignment expression.
-        If the current token is not an assignment operator,
-        it returns the result of parse_binary_expression.
-
-        Returns:
-            Expression: The parsed assignment expression
-            or the result of parse_binary_expression.
-
-        Raises:
-            SyntaxError: If the left-hand side of the assignment
-            is not a valid identifier or index expression.
-        """
         left = self.parse_binary_expression()
 
         if self.parser.current().token_type == TokenType.ASSIGN:
@@ -64,17 +36,6 @@ class ExpressionParser(ExpressionParserABC):
         return left
 
     def parse_binary_expression(self, precedence: int = 0) -> Expression:
-        """Parses a binary expression using operator precedence.
-        If the current token does not have higher precedence,
-        it delegates to parse_unary_expression.
-
-        Args:
-            precedence (int): The current precedence level.
-
-        Returns:
-            Expression: The parsed binary expression
-            or the result of parse_unary_expression.
-        """
         left = self.parse_unary_expression()
 
         while not self.parser.is_eof():
@@ -92,13 +53,6 @@ class ExpressionParser(ExpressionParserABC):
         return left
 
     def parse_unary_expression(self) -> Expression:
-        """Parses a unary expression, handling prefix and postfix operators.
-        For other types of expressions, it delegates to parse_primary_expression.
-
-        Returns:
-            Expression: The parsed unary expression
-            or the result of parse_primary_expression.
-        """
         token = self.parser.current()
 
         # Prefix unary operators
@@ -126,20 +80,6 @@ class ExpressionParser(ExpressionParserABC):
         return expr
 
     def parse_primary_expression(self) -> Expression:
-        """Parses a primary expression, which can be
-        literals, identifiers, or grouped expressions.
-        Delegates to...
-            - parse_identifier_expression if the current token is an identifier.
-            - parse_expression if the current token is a left parenthesis.
-            - parse_array_literal if the current token is a left bracket.
-            - parse_set_literal if the current token is a left brace.
-
-        Returns:
-            Expression: The parsed primary expression.
-
-        Raises:
-            SyntaxError: If the current token is not a valid primary expression.
-        """
         token = self.parser.current()
 
         match token.token_type:
@@ -175,28 +115,13 @@ class ExpressionParser(ExpressionParserABC):
                 raise SyntaxError(f"Unexpected token {token}")
 
     def parse_identifier_expression(self) -> Expression:
-        """Parses an identifier expression, which can
-        be a variable, function call, or array index.
-        Delegates to...
-            - parse_method_call_expression if followed by a parenthesis.
-            - parse_member_access_expression if followed by a dot.
-
-        Returns:
-            Expression: The parsed identifier, call expression, or index expression.
-        """
         identifier = self.parser.consume(TokenType.IDENTIFIER).value
         expr = Identifier(identifier)
         if self.parser.current().token_type == TokenType.LBRACE:
             return self.parse_entity_literal(identifier)
-        return self.parse_postfix_expression(expr)
+        return self._parse_postfix_expression(expr)
 
     def parse_function_literal(self) -> FunctionLiteral:
-        """Parses a function expression
-        Delegates to parse_array_literal if a type followed by an expression is present.
-
-        Returns:
-            Expression: The parsed function expression.
-        """
         self.parser.consume(TokenType.FUNC)
         self.parser.consume(TokenType.LBRACKET)
 
@@ -217,14 +142,6 @@ class ExpressionParser(ExpressionParserABC):
     def parse_function_call_expression(
         self, callee: Expression
     ) -> FunctionCallExpression:
-        """Parses a function function call expression.
-
-        Args:
-            callee (Expression): The function being called.
-
-        Returns:
-            FunctionCallExpression: The parsed function call expression.
-        """
         self.parser.consume(TokenType.LPAREN)
         arguments = self.parse_arguments()
         self.parser.consume(TokenType.RPAREN)
@@ -232,11 +149,6 @@ class ExpressionParser(ExpressionParserABC):
         return FunctionCallExpression(callee, arguments)
 
     def parse_arguments(self) -> List[Expression]:
-        """Parses the arguments of a function call.
-
-        Returns:
-            List[Expression]: The list of parsed arguments.
-        """
         args: List[Expression] = []
         if self.parser.current().token_type != TokenType.RPAREN:
             args.append(self.parse_expression())
@@ -247,13 +159,6 @@ class ExpressionParser(ExpressionParserABC):
         return args
 
     def parse_array_literal(self) -> Expression:
-        """Parses an array literal.
-        Delegates to parse_pipe_expression to handle cases
-        where the array is followed by a pipe expression.
-
-        Returns:
-            Expression: The parsed array literal or a parsed pipe expression.
-        """
         self.parser.consume(TokenType.LBRACKET)
         elements: List[Expression] = []
 
@@ -267,11 +172,6 @@ class ExpressionParser(ExpressionParserABC):
         return self.parse_pipe_expression(elements)
 
     def parse_set_literal(self) -> Expression:
-        """Parses a set literal or delegates to parse_map_literal if colons are present.
-
-        Returns:
-            Expression: The parsed set literal or map literal.
-        """
         self.parser.consume(TokenType.LBRACE)
         elements: List[Expression] = []
 
@@ -289,14 +189,6 @@ class ExpressionParser(ExpressionParserABC):
         return SetLiteral(elements)
 
     def parse_map_literal(self, first_key: Expression) -> Expression:
-        """Parses an map literal
-
-        Args:
-            first_key (Expression): The first key in the map literal.
-
-        Returns:
-            Expression: The parsed map literal.
-        """
         elements: List[Tuple[Expression, Expression]] = []
         self.parser.consume(TokenType.COLON)
         elements.append((first_key, self.parse_expression()))
@@ -312,7 +204,7 @@ class ExpressionParser(ExpressionParserABC):
 
         return MapLiteral(elements)
 
-    def parse_entity_literal(self, template: str) -> Expression:
+    def parse_entity_literal(self, template: str) -> EntityLiteral:
         self.parser.consume(TokenType.LBRACE)
 
         attributes: Dict[str, Expression] = {}
@@ -330,14 +222,6 @@ class ExpressionParser(ExpressionParserABC):
         return EntityLiteral(CustomTypeIdentifier(template), attributes)
 
     def parse_index_expression(self, array: Expression) -> IndexExpression:
-        """Parses an index expression for array access.
-
-        Args:
-            array (Expression): The array being indexed.
-
-        Returns:
-            IndexExpression: The parsed index expression.
-        """
         self.parser.consume(TokenType.LBRACKET)
         index = self.parse_expression()
         self.parser.consume(TokenType.RBRACKET)
@@ -345,15 +229,6 @@ class ExpressionParser(ExpressionParserABC):
         return IndexExpression(array, index)
 
     def parse_pipe_expression(self, args: List[Expression]) -> Expression:
-        """Parses a pipe expression beginning with a parameter list.
-
-        Args:
-            args (List[Expression]):
-                The list of args to be passed to the first function.
-
-        Returns:
-            Expression: The parsed pipe expression.
-        """
         call: Optional[FunctionCallExpression] = None
 
         while (
@@ -376,15 +251,27 @@ class ExpressionParser(ExpressionParserABC):
 
         return call
 
-    def parse_postfix_expression(self, expr: Expression) -> Expression:
-        """Parses the postfix expressions for member access and method calls.
+    def parse_member_access_expression(self, composite: Expression) -> Expression:
+        self.parser.consume(TokenType.DOT)
+        member = self.parser.consume(TokenType.IDENTIFIER)
 
-        Args:
-            expr (Expression): The initial expression to be extended.
+        if self.parser.current().token_type == TokenType.LPAREN:
+            return self.parse_method_call_expression(
+                composite, Identifier(member.value)
+            )
 
-        Returns:
-            Expression: The extended expression with member accesses and method calls.
-        """
+        return MemberAccessExpression(composite, Identifier(member.value))
+
+    def parse_method_call_expression(
+        self, composite: Expression, method: Identifier
+    ) -> MethodCallExpression:
+        self.parser.consume(TokenType.LPAREN)
+        args = self.parse_arguments()
+        self.parser.consume(TokenType.RPAREN)
+
+        return MethodCallExpression(composite, method, args)
+
+    def _parse_postfix_expression(self, expr: Expression) -> Expression:
         while True:
             match self.parser.current().token_type:
                 case TokenType.LPAREN:
@@ -397,39 +284,3 @@ class ExpressionParser(ExpressionParserABC):
                     break
 
         return expr
-
-    def parse_member_access_expression(self, obj: Expression) -> Expression:
-        """Parses a member expression for object access.
-        Delegate to parse_method_call_expression
-        if the member is followed by a parenthesis.
-
-        Args:
-            obj (Expression): The object being accessed.
-
-        Returns:
-            MemberAccessExpression: The parsed member access expression.
-        """
-        self.parser.consume(TokenType.DOT)
-        member = self.parser.consume(TokenType.IDENTIFIER)
-
-        if self.parser.current().token_type == TokenType.LPAREN:
-            return self.parse_method_call_expression(obj, Identifier(member.value))
-
-        return MemberAccessExpression(obj, Identifier(member.value))
-
-    def parse_method_call_expression(
-        self, obj: Expression, method: Identifier
-    ) -> MethodCallExpression:
-        """Parses a method call expression.
-
-        Args:
-            obj (Expression): The object being called.
-
-        Returns:
-            MethodCallExpression: The parsed method call expression.
-        """
-        self.parser.consume(TokenType.LPAREN)
-        args = self.parse_arguments()
-        self.parser.consume(TokenType.RPAREN)
-
-        return MethodCallExpression(obj, method, args)

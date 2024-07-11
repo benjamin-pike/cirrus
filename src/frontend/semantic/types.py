@@ -4,7 +4,7 @@ from frontend.lexer.tokens import TokenType
 
 
 class VarType(ABC):
-    """Abstract class for all types"""
+    """Abstract base class for all types"""
 
 
 # Primitive and function types
@@ -70,7 +70,7 @@ class FunctionType(VarType):
 
 # Composite types
 class CompositeType(VarType):
-    """Abstract class for composite types"""
+    """Abstract base class for composite types"""
 
     attributes: Dict[str, VarType]
     methods: Dict[str, FunctionType]
