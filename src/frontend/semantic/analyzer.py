@@ -10,13 +10,7 @@ from lib.helpers import is_iterable, pascal_to_snake_case
 
 
 class SemanticAnalyzer(SemanticAnalyzerABC):
-    """The SemanticAnalyzer class performs semantic analysis
-    by traversing the AST and ensuring that:\n
-        1) All variables and functions are declared before use.\n
-        2) Variables and functions are not redeclared or shadowed in lower scopes.\n
-        3) Types are compatible in declarations, expressions, and assignments.\n
-        4) All code is reachable and flow control statements are used correctly.\n
-    """
+    """Analyzes the semantic meaning and validity of an AST."""
 
     def __init__(self) -> None:
         self.symbol_table = SymbolTable()
@@ -24,17 +18,6 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
         self.expression_analyzer = ExpressionAnalyzer(self)
 
     def analyze(self, node: Node) -> VarType:
-        """Analyses a node in the AST.
-
-        Args:
-            node (Node): The AST node to analyse.
-
-        Returns:
-            VarType: The type of the node.
-
-        Raises:
-            SyntaxError: If unreachable code is detected.
-        """
         if not self.symbol_table.is_reachable():
             raise SyntaxError(f"Unreachable code detected at {node}")
 
@@ -61,15 +44,6 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
         return node_type
 
     def analyze_generic(self, node: Node) -> VarType:
-        """Called if no explicit analyzer function exists for a node.
-        Recursively analyses children.
-
-        Args:
-            node (Node): The AST node to analyse.
-
-        Returns:
-            VarType: The type of the node.
-        """
         for attr_value in vars(node).values():
             if isinstance(attr_value, Node):
                 self.analyze(attr_value)
@@ -81,14 +55,6 @@ class SemanticAnalyzer(SemanticAnalyzerABC):
         return PrimitiveType(TokenType.VOID)
 
     def analyze_program(self, node: Program) -> VoidType:
-        """Starts semantic analysis from the root Program node.
-
-        Args:
-            node (Program): The Program node to analyse.
-
-        Returns:
-            VoidType: Void type.
-        """
         self.symbol_table.enter_scope()
         for statement in node.body:
             self.analyze(statement)

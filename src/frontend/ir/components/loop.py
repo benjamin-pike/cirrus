@@ -1,6 +1,4 @@
-# pyright: reportAttributeAccessIssue=false
 # pyright: reportUnknownArgumentType=false
-# pyright: reportOptionalMemberAccess=false
 # pyright: reportUnknownVariableType=false
 # pyright: reportUnknownMemberType=false
 
@@ -54,11 +52,11 @@ class LoopGenerator:
         array_struct_ptr = self.generator.generate_expression(node.iterable)
         size_ptr = self.generator.builder.gep(
             array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)],
+            [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), 0)],
         )
         data_field_ptr = self.generator.builder.gep(
             array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 2)],
+            [ir.Constant(IRType.int(32), 0), ir.Constant(IRType.int(32), 2)],
         )
         array_length = self.generator.builder.load(size_ptr)
         data_ptr = self.generator.builder.load(data_field_ptr)

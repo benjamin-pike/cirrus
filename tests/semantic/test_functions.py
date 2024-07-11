@@ -432,7 +432,7 @@ def test_map_method_call_expression():
 def test_method_access_on_invalid_type():
     code = """
         int x = 5;
-        x.add(4);  // Method call on non-object type
+        x.add(4);  // Method call on non-composite type
     """
     with pytest.raises(
         TypeError, match=r"Type `PrimitiveType\(INT\)` does not have methods"

@@ -1,28 +1,13 @@
-from typing import *
+from typing import Generator, Optional
 import re
 from frontend.lexer.tokens import TokenType, spec
 from frontend.lexer.token import Token
 
 
 class Lexer:
-    """
-    The Lexer is responsible for converting a string of source code into a stream of
-    tokens that can be used by a parser. It uses regular expressions to identify token
-    types based on predefined specifications.
-
-    Attributes:
-        code (str): The source code to be tokenised.
-        line (int): The current line number being processed.
-        column (int): The current column number being processed.
-        pos (int): The current position in the source code string.
-    """
+    """Tokenises the source code into a sequence of tokens."""
 
     def __init__(self, code: str) -> None:
-        """Initialises the Lexer with the source code and sets the initial positions.
-
-        Args:
-            code (str): The source code to be tokenised.
-        """
         self.code: str = code
         self.line: int = 1
         self.column: int = 1
@@ -40,12 +25,12 @@ class Lexer:
         # Compile the regular expression based on the token specification
         # (spec = [(TokenType, regex), ...])
         regex: str = "|".join(f"(?P<{pair[0].name}>{pair[1]})" for pair in spec)
-        get_token = re.compile(
-            regex
-        ).match  # Function to match regex from the current position
-        mo: Optional[re.Match[str]] = get_token(
-            self.code, self.pos
-        )  # Initial match object
+
+        # Function to match regex from the current position
+        get_token = re.compile(regex).match
+
+        # Initial match object
+        mo: Optional[re.Match[str]] = get_token(self.code, self.pos)
 
         while mo is not None:
             token_type: str | None = mo.lastgroup  # Type of the matched token
@@ -86,7 +71,7 @@ class Lexer:
     def _match_string(
         self, token_type: str, value: str
     ) -> Generator[Token, None, None]:
-        """Handles the tokenization of string literals.
+        """Handles the tokenisation of string literals.
 
         Args:
             token_type (str): The type of the string token (single or double quote).
@@ -100,9 +85,8 @@ class Lexer:
         """
         quote_type = value
 
-        yield Token(
-            TokenType[token_type], value, self.line, self.column
-        )  # Yield the opening quote
+        # Yield the opening quote
+        yield Token(TokenType[token_type], value, self.line, self.column)
 
         self.pos += 1
         self.column += 1

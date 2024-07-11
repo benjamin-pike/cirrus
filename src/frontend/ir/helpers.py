@@ -43,8 +43,8 @@ def get_ir_type(var_type: Union[VarType, None]) -> ir.Type:
         element_ty = get_ir_type(var_type.element_type)
         array_struct_type = ir.LiteralStructType(
             [
-                ir.IntType(32),  # size
-                ir.IntType(32),  # capacity
+                IRType.int(32),  # size
+                IRType.int(32),  # capacity
                 element_ty.as_pointer(),  # data
             ]
         )

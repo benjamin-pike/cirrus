@@ -5,24 +5,12 @@ from frontend.syntax.ast import *
 
 
 class ExpressionAnalyzer(ExpressionAnalyzerABC):
-    """Class that provides methods for analyzing the expression semantics."""
+    """Class that provides methods for analysing the expression semantics."""
 
     def __init__(self, analyzer: SemanticAnalyzerABC) -> None:
         self.analyzer = analyzer
 
     def analyze_binary_expression(self, node: BinaryExpression) -> VarType:
-        """Analyses a BinaryExpression node, checking the operand types.
-
-        Args:
-            node (BinaryExpression): The BinaryExpression node to analyse.
-
-        Returns:
-            VarType: The type of the binary expression.
-
-        Raises:
-            TypeError: If the operand types do not match the operator.
-            TypeError: If the operator is invalid.
-        """
         left_type = self.analyzer.analyze(node.left)
         right_type = self.analyzer.analyze(node.right)
 
@@ -77,18 +65,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
                 raise TypeError(f"Invalid use of operator: {node.operator}")
 
     def analyze_unary_expression(self, node: UnaryExpression) -> VarType:
-        """Analyses a UnaryExpression node, checking the operand type.
-
-        Args:
-            node (UnaryExpression): The UnaryExpression node to analyse.
-
-        Returns:
-            VarType: The type of the unary expression.
-
-        Raises:
-            TypeError: If the operand type does not match the operator.
-            TypeError: If the operator is invalid.
-        """
         operand_type = self.analyzer.analyze(node.operand)
 
         match node.operator:
@@ -123,18 +99,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
                 raise TypeError(f"Invalid use of operator: {node.operator}")
 
     def analyze_assignment_expression(self, node: AssignmentExpression) -> VarType:
-        """Analyses an AssignmentExpression node, checking the assigned value type.
-
-        Args:
-            node (AssignmentExpression): The AssignmentExpression node to analyse.
-
-        Returns:
-            VarType: The type of the assignment expression.
-
-        Raises:
-            TypeError: If the variable type does not match the assigned value type.
-            TypeError: If the assignment target is invalid.
-        """
         if not isinstance(
             node.left, (Identifier, IndexExpression, MemberAccessExpression)
         ):
@@ -151,18 +115,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return left_type
 
     def analyze_identifier(self, node: Identifier) -> VarType:
-        """Analyses an Identifier node, checking if the
-        variable is declared and returning its declared type.
-
-        Args:
-            node (Identifier): The Identifier node to analyse.
-
-        Returns:
-            VarType: The declared type of the identifier.
-
-        Raises:
-            NameError: If the identifier is not declared.
-        """
         symbol = self.analyzer.symbol_table.lookup(node.name, True)
         if not symbol:
             symbol = self.analyzer.symbol_table.lookup(node.name)
@@ -172,23 +124,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return symbol.var_type
 
     def analyze_function_call_expression(self, node: FunctionCallExpression) -> VarType:
-        """Analyses a FunctionCallExpression node,
-        checking the function declaration and argument types.
-
-        Args:
-            node (FunctionCallExpression): The FunctionCallExpression node to analyse.
-
-        Raises:
-            NameError: If the function is not declared.
-            TypeError: If the function is not a function type.
-            TypeError:
-                If the number of arguments does not match the function declaration.
-            TypeError: If the argument types do not match the function declaration.
-
-        Returns:
-            VarType: The return type of the function.
-        """
-
         function_type: FunctionType
         if isinstance(node.callee, Identifier):
             symbol = self.analyzer.symbol_table.lookup(node.callee.name)
@@ -227,19 +162,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return function_type.return_type
 
     def analyze_index_expression(self, node: IndexExpression) -> VarType:
-        """Analyses an IndexExpression node, checking the array and index types.
-
-        Args:
-            node (IndexExpression): The IndexExpression node to analyse.
-
-        Returns:
-            VarType: The type of the indexed value.
-
-        Raises:
-            TypeError: If the array index is not an integer.
-            TypeError: If the array is not an array type.
-        """
-
         index_type = self.analyzer.analyze(node.index)
         if index_type != PrimitiveType(TokenType.INT):
             raise TypeError("Array index must be an integer")
@@ -251,51 +173,27 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return array_type.element_type
 
     def analyze_member_access_expression(self, node: MemberAccessExpression) -> VarType:
-        """Analyses a MemberAccessExpression node, checking the object type.
-
-        Args:
-            node (MemberAccessExpression): The MemberAccessExpression node to analyse.
-
-        Returns:
-            VarType: The type of the member.
-
-        Raises:
-            TypeError: If the object type does not have the member.
-        """
-        obj_type = self.analyzer.analyze(node.obj)
-        if not isinstance(obj_type, CompositeType):
-            raise TypeError(f"Type `{obj_type}` does not have members")
-        member_type = obj_type.attributes.get(node.member.name)
+        composite_type = self.analyzer.analyze(node.composite)
+        if not isinstance(composite_type, CompositeType):
+            raise TypeError(f"Type `{composite_type}` does not have members")
+        member_type = composite_type.attributes.get(node.member.name)
 
         if member_type is None:
             raise TypeError(
-                f"Member `{node.member.name}` is not defined on type `{obj_type}`"
+                f"Member `{node.member.name}` is not defined on type `{composite_type}`"
             )
 
         return member_type
 
     def analyze_method_call_expression(self, node: MethodCallExpression) -> VarType:
-        """Analyses a MethodCallExpression node,
-        checking the object type and method name.
-
-        Args:
-            node (MethodCallExpression): The MethodCallExpression node to analyse.
-
-        Returns:
-            VarType: The return type of the method.
-
-        Raises:
-            TypeError: If the object type does not have the method.
-            TypeError: If the argument types do not match the method declaration.
-        """
-        obj_type = self.analyzer.analyze(node.obj)
-        if not isinstance(obj_type, CompositeType):
-            raise TypeError(f"Type `{obj_type}` does not have methods")
-        method_type = obj_type.methods.get(node.method.name)
+        composite_type = self.analyzer.analyze(node.composite)
+        if not isinstance(composite_type, CompositeType):
+            raise TypeError(f"Type `{composite_type}` does not have methods")
+        method_type = composite_type.methods.get(node.method.name)
 
         if method_type is None:
             raise TypeError(
-                f"Method `{node.method.name}` is not defined on type `{obj_type}`"
+                f"Method `{node.method.name}` is not defined on type `{composite_type}`"
             )
 
         if len(node.args) != len(method_type.param_types):
@@ -316,64 +214,21 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
 
     # Literals
     def analyze_numeric_literal(self, node: NumericLiteral) -> VarType:
-        """Analyses a NumericLiteral node, returning its type.
-
-        Args:
-            node (NumericLiteral): The NumericLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the numeric literal.
-        """
         if isinstance(node.value, int):
             return PrimitiveType(TokenType.INT)
 
         return PrimitiveType(TokenType.FLOAT)
 
     def analyze_string_literal(self, node: StringLiteral) -> VarType:
-        """Analyses a StringLiteral node, returning its type.
-
-        Args:
-            node (StringLiteral): The StringLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the string literal.
-        """
         return PrimitiveType(TokenType.STR)
 
     def analyze_boolean_literal(self, node: BooleanLiteral) -> VarType:
-        """Analyses a BooleanLiteral node, returning its type.
-
-        Args:
-            node (BooleanLiteral): The BooleanLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the boolean literal.
-        """
         return PrimitiveType(TokenType.BOOL)
 
     def analyze_null_literal(self, node: NullLiteral) -> VarType:
-        """Analyses a NullLiteral node, returning its type.
-
-        Args:
-            node (NullLiteral): The NullLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the null literal.
-        """
         return PrimitiveType(TokenType.NULL)
 
     def analyze_array_literal(self, node: ArrayLiteral) -> VarType:
-        """Analyses an ArrayLiteral node, checking the element types.
-
-        Args:
-            node (ArrayLiteral): The ArrayLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the array.
-
-        Raises:
-            TypeError: If the element types are invalid.
-        """
         if not node.elements:
             return ArrayType(VoidType())
 
@@ -385,17 +240,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return ArrayType(element_type, len(node.elements))
 
     def analyze_set_literal(self, node: SetLiteral) -> VarType:
-        """Analyses a SetLiteral node, checking the element types.
-
-        Args:
-            node (SetLiteral): The SetLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the set.
-
-        Raises:
-            TypeError: If the element types are invalid.
-        """
         if not node.elements:
             return SetType(VoidType())
 
@@ -407,19 +251,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return SetType(element_type)
 
     def analyze_map_literal(self, node: MapLiteral) -> VarType:
-        """Analyses a MapLiteral node, checking the key and value types.
-
-        Args:
-            node (MapLiteral): The MapLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the map.
-
-        Raises:
-            TypeError: If the key types are invalid.
-            TypeError: If the value types are invalid.
-        """
-
         if not node.elements:
             return MapType(VoidType(), VoidType())
 
@@ -436,18 +267,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return MapType(key_type, value_type)
 
     def analyze_entity_literal(self, node: EntityLiteral) -> VarType:
-        """Analyses an EntityLiteral node, checking the attribute types.
-
-        Args:
-            node (EntityLiteral): The EntityLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the entity.
-
-        Raises:
-            NameError: If the template is not declared.
-            TypeError: If the attribute types do not match the template declaration.
-        """
         template_symbol = self.analyzer.symbol_table.lookup(node.template.name, False)
         if not template_symbol:
             raise NameError(f"Template `{node.template}` not found")
@@ -472,14 +291,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
         return template
 
     def analyze_function_literal(self, node: FunctionLiteral) -> VarType:
-        """Analyses an FunctionLiteral node, checking the parameter and return types.
-
-        Args:
-            node (FunctionLiteral): The FunctionLiteral node to analyse.
-
-        Returns:
-            VarType: The type of the function literal.
-        """
         self.analyzer.symbol_table.enter_scope(node)
 
         for param_name, param_type in node.parameters:
@@ -499,14 +310,6 @@ class ExpressionAnalyzer(ExpressionAnalyzerABC):
 
     # Helpers
     def _is_assignable(self, node: Expression) -> bool:
-        """Checks if an expression is a valid assignment target.
-
-        Args:
-            node (Expression): The expression to check.
-
-        Returns:
-            bool: True if the expression is assignable, otherwise False.
-        """
         if isinstance(node, Identifier):
             return True
 
