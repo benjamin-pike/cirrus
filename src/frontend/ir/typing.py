@@ -84,6 +84,12 @@ class StatementGeneratorABC(ABC):
     def generate_range_statement(self, node: RangeStatement) -> None:
         """Generate LLVM IR for a range statement."""
 
+    def generate_halt_statement(self, _node: HaltStatement) -> None:
+        """Generate LLVM IR for a halt statement."""
+
+    def generate_skip_statement(self, _node: SkipStatement) -> None:
+        """Generate LLVM IR for a skip statement."""
+
     @abstractmethod
     def generate_expression_statement(self, node: ExpressionStatement) -> None:
         """Generate LLVM IR for an expression statement."""

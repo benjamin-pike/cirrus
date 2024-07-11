@@ -6,7 +6,8 @@
 
 
 from llvmlite import ir
-from frontend.ir.composites.arrays import ArrayGenerator
+from frontend.ir.components.array import ArrayGenerator
+from frontend.ir.components.string import StringGenerator
 from frontend.ir.typing import ExpressionGeneratorABC, IRGeneratorABC
 from frontend.ir.types import *
 from frontend.syntax.ast import *
@@ -20,6 +21,7 @@ class ExpressionGenerator(ExpressionGeneratorABC):
 
     def __init__(self, generator: IRGeneratorABC):
         self.generator = generator
+        self.string_generator = StringGenerator(generator)
         self.array_generator = ArrayGenerator(generator)
 
     def generate_numeric_literal(self, node: NumericLiteral) -> ir.Value:
@@ -36,27 +38,7 @@ class ExpressionGenerator(ExpressionGeneratorABC):
         return ir.Constant(IRType.float(), node.value)
 
     def generate_string_literal(self, node: StringLiteral) -> ir.Value:
-        """Generate LLVM IR for a string literal.
-
-        Args:
-            node (StringLiteral): The string literal node
-
-        Returns:
-            ir.Value: The bitcasted global variable pointer to the string literal
-        """
-        str_val = node.value.encode("utf8") + b"\0"
-        str_const = ir.Constant(
-            ir.ArrayType(IRType.int(8), len(str_val)), bytearray(str_val)
-        )
-
-        str_global = ir.GlobalVariable(
-            self.generator.module, str_const.type, name=node.id
-        )
-        str_global.linkage = "internal"
-        str_global.global_constant = True
-        str_global.initializer = str_const
-
-        return self.generator.builder.bitcast(str_global, IRType.int(8).as_pointer())
+        return self.string_generator.generate_string_literal(node)
 
     def generate_boolean_literal(self, node: BooleanLiteral) -> ir.Value:
         """Generate LLVM IR for a boolean literal.
@@ -221,11 +203,11 @@ class ExpressionGenerator(ExpressionGeneratorABC):
         if node.left.type == PrimitiveType(TokenType.STR):
             match node.operator:
                 case TokenType.PLUS:
-                    return self._concat_strings(left, right)
+                    return self.string_generator.concat_strings(left, right)
                 case TokenType.EQUAL:
-                    return self._compare_strings(left, right, "==")
+                    return self.string_generator.compare_strings(left, right, "==")
                 case TokenType.NOT_EQUAL:
-                    return self._compare_strings(left, right, "!=")
+                    return self.string_generator.compare_strings(left, right, "!=")
                 case _:
                     raise NotImplementedError(
                         f"Binary operator `{node.operator}` for str not implemented"
@@ -252,26 +234,7 @@ class ExpressionGenerator(ExpressionGeneratorABC):
         return value
 
     def generate_index_expression(self, node: IndexExpression) -> ir.Value:
-        """Generate LLVM IR for an index expression.
-
-        Args:
-            node (IndexExpression): The index expression node
-
-        Returns:
-            ir.Value: The LLVM IR value of the indexed element
-        """
-        array_struct_ptr = self.generator.generate_expression(node.array)
-        index = self.generator.generate_expression(node.index)
-
-        data_field_ptr = self.generator.builder.gep(
-            array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 2)],
-        )
-        data_ptr = self.generator.builder.load(data_field_ptr)
-
-        element_ptr = self.generator.builder.gep(data_ptr, [index])
-
-        return self.generator.builder.load(element_ptr)
+        return self.array_generator.generate_index_expression(node)
 
     def generate_function_call_expression(
         self, node: FunctionCallExpression
@@ -308,70 +271,3 @@ class ExpressionGenerator(ExpressionGeneratorABC):
             return self.array_generator.generate_array_method_call(node)
 
         raise NotImplementedError("Method call expression not implemented")
-
-    # Helper methods
-    def _compare_strings(
-        self, left: ir.Value, right: ir.Value, cmp_op: str
-    ) -> ir.Instruction:
-        """Generate LLVM IR to compare two strings.
-
-        Args:
-            left (ir.Value): The left string to compare
-            right (ir.Value): The right string to compare
-            cmp_op (str): The comparison operator
-
-        Returns:
-            ir.Instruction: The comparison instruction
-        """
-
-        strcmp_res = self.generator.builder.call(
-            self.generator.module.get_global("strcmp"),
-            [left, right],
-            name=f"str_cmp_{cmp_op}",
-        )
-
-        return self.generator.builder.icmp_signed(
-            cmp_op,
-            strcmp_res,
-            ir.Constant(IRType.int(32), 0),
-        )
-
-    def _concat_strings(self, left: ir.Value, right: ir.Value) -> ir.Value:
-        """Generate LLVM IR to concatenate two strings.
-
-        Args:
-            left (ir.Value): The left string to concatenate
-            right (ir.Value): The right string to concatenate
-
-        Returns:
-            ir.Value: The pointer to the concatenated string
-        """
-        left_len = self.generator.builder.call(
-            self.generator.module.get_global("strlen"), [left], name="left_len"
-        )
-        right_len = self.generator.builder.call(
-            self.generator.module.get_global("strlen"), [right], name="right_len"
-        )
-
-        total_len = self.generator.builder.add(left_len, right_len)
-        total_len = self.generator.builder.add(
-            total_len, ir.Constant(IRType.int(32), 1)
-        )
-
-        concat_str = self.generator.builder.call(
-            self.generator.module.get_global("malloc"), [total_len], name="concat_str"
-        )
-
-        self.generator.builder.call(
-            self.generator.module.get_global("strcpy"),
-            [concat_str, left],
-            name="copy_left",
-        )
-
-        self.generator.builder.call(
-            self.generator.module.get_global("strcat"),
-            [concat_str, right],
-            name="concat_right",
-        )
-
-        return concat_str
