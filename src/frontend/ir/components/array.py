@@ -13,7 +13,7 @@ from frontend.syntax.ast import *
 
 
 class ArrayGenerator:
-    """The ArrayGenerator class generates LLVM IR for array literals and methods."""
+    """Generates LLVM IR for array literals and associated methods."""
 
     def __init__(self, generator: IRGeneratorABC):
         self.generator = generator
@@ -68,6 +68,28 @@ class ArrayGenerator:
         self._store_data_pointer(array_struct_ptr, data_array_ptr)
 
         return array_struct_ptr
+
+    def generate_index_expression(self, node: IndexExpression) -> ir.Value:
+        """Generate LLVM IR for an index expression.
+
+        Args:
+            node (IndexExpression): The index expression node
+
+        Returns:
+            ir.Value: The LLVM IR value of the indexed element
+        """
+        array_struct_ptr = self.generator.generate_expression(node.array)
+        index = self.generator.generate_expression(node.index)
+
+        data_field_ptr = self.generator.builder.gep(
+            array_struct_ptr,
+            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 2)],
+        )
+        data_ptr = self.generator.builder.load(data_field_ptr)
+
+        element_ptr = self.generator.builder.gep(data_ptr, [index])
+
+        return self.generator.builder.load(element_ptr)
 
     def generate_array_method_call(self, node: MethodCallExpression) -> ir.Value:
         """Generate LLVM IR for an array method call.

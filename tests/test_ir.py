@@ -13,6 +13,7 @@ from frontend.semantic.analyzer import SemanticAnalyzer
 
 Capfd = pytest.CaptureFixture[str]
 
+
 def generate(code: str) -> ir.Module:
     lexer = Lexer(code)
     ast = Parser(list(lexer.tokenize())).parse()
@@ -45,8 +46,9 @@ def check(capfd: Capfd):
         execute(generate(code))
         out, _ = capfd.readouterr()
         assert out.strip() == expected_output
-    
+
     return compare
+
 
 # Variables and Functions
 def test_variable_declaration(capfd: Capfd) -> None:
@@ -56,13 +58,15 @@ def test_variable_declaration(capfd: Capfd) -> None:
     """
     check(capfd)(code, "10")
 
+
 def test_variable_reassignment(capfd: Capfd) -> None:
     code = """
         int a = 10;
         echo a + 20;
     """
     check(capfd)(code, "30")
-    
+
+
 def test_simple_function(capfd: Capfd) -> None:
     code = """
         func concat -> str = [str a, str b] >> {
@@ -72,6 +76,7 @@ def test_simple_function(capfd: Capfd) -> None:
         echo concat("Hello ", "World");
     """
     check(capfd)(code, "Hello World")
+
 
 def test_complex_function(capfd: Capfd) -> None:
     code = """
@@ -89,8 +94,9 @@ def test_complex_function(capfd: Capfd) -> None:
         
         echo math(multiply, math(add, 10, 20), 50);
     """
-    
+
     check(capfd)(code, "1500")
+
 
 def test_curried_function(capfd: Capfd) -> None:
     code = """
@@ -113,6 +119,7 @@ def test_curried_function(capfd: Capfd) -> None:
         echo getMathFunc('div')(getMathFunc('mul')(10, 20), 50);
     """
     check(capfd)(code, "4")
+
 
 def test_pipe_statement(capfd: Capfd) -> None:
     code = """
@@ -138,7 +145,8 @@ def test_pipe_statement(capfd: Capfd) -> None:
         echo [add(a, b), sub(a, b)] >> mul >> div(20);
     """
     check(capfd)(code, "-15")
-    
+
+
 # Arrays
 def test_array_declaration(capfd: Capfd) -> None:
     code = """
@@ -146,7 +154,8 @@ def test_array_declaration(capfd: Capfd) -> None:
         echo numbers[2];
     """
     check(capfd)(code, "30")
-    
+
+
 def test_array_methods(capfd: Capfd) -> None:
     code = """
         int[] numbers = [10, 20, 30, 40, 50];
@@ -154,7 +163,8 @@ def test_array_methods(capfd: Capfd) -> None:
         echo numbers.insert(5, 60).pop() * numbers.push(70).extract(1);
     """
     check(capfd)(code, "1200")
-    
+
+
 def test_nested_array_declaration(capfd: Capfd) -> None:
     code = """
         int[][] matrix = [
@@ -166,7 +176,8 @@ def test_nested_array_declaration(capfd: Capfd) -> None:
         echo matrix[1][2];
     """
     check(capfd)(code, "6")
-    
+
+
 def test_nested_array_methods(capfd: Capfd) -> None:
     code = """
         int[][] matrix = [
@@ -178,6 +189,7 @@ def test_nested_array_methods(capfd: Capfd) -> None:
         echo matrix[1].insert(2, 7).pop() * matrix[2].push(10).extract(1);
     """
     check(capfd)(code, "48")
+
 
 # Control Flow Statements
 def test_if_statement(capfd: Capfd) -> None:
@@ -199,7 +211,8 @@ def test_if_statement(capfd: Capfd) -> None:
         check(10);
     """
     check(capfd)(code, "a is less than 5")
-    
+
+
 def test_while_statement(capfd: Capfd) -> None:
     code = """
         int a = 10;
@@ -214,7 +227,7 @@ def test_while_statement(capfd: Capfd) -> None:
         }
     """
     check(capfd)(code, "10\n9\n8\n7\n6\nmidway\n5\n4\n3\n2\n1")
-    
+
 
 def test_each_statement(capfd: Capfd) -> None:
     code = """
@@ -225,11 +238,61 @@ def test_each_statement(capfd: Capfd) -> None:
         }
     """
     check(capfd)(code, "Alice\nBob\nCharlie\nAlice")
-    
+
+
 def test_range_statement(capfd: Capfd) -> None:
     code = """
         range (i in 0 to 10 by 2) {
             echo i;
         }
     """
-    check(capfd)(code, "0\n2\n4\n6\n8")       
+    check(capfd)(code, "0\n2\n4\n6\n8")
+
+
+def test_halt_statement(capfd: Capfd) -> None:
+    code = """
+        str[] names = ["Alice", "Bob", "Charlie"];
+        
+        range (i in 0 to 5) {
+            bool terminate = false;
+            
+            each (name in names) {                
+                if (name == "Bob" && i == 2) {
+                    terminate = true;
+                    halt;
+                }
+                
+                echo name;
+            }
+            
+            if (terminate) {
+                halt;
+            }
+        }
+    """
+
+    check(capfd)(code, "Alice\nBob\nCharlie\nAlice\nBob\nCharlie\nAlice")
+
+
+def test_skip_statement(capfd: Capfd) -> None:
+    code = """
+        str[] names = ["Alice", "Bob", "Charlie"];
+        
+        range (i in 0 to 5) {
+            if (i > 3) {
+                skip;
+            }
+
+            each (name in names) {
+                if (name == "Bob" && i == 2) {
+                    skip;
+                }
+                
+                echo name;
+            }
+        }
+    """
+    check(capfd)(
+        code,
+        "Alice\nBob\nCharlie\nAlice\nBob\nCharlie\nAlice\nCharlie\nAlice\nBob\nCharlie",
+    )

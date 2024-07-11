@@ -5,10 +5,12 @@
 # pyright: reportUnknownMemberType=false
 
 from llvmlite import ir
+from frontend.ir.components.loop import LoopGenerator
 from frontend.ir.helpers import get_ir_type
 from frontend.ir.types import IRType, NullPointerConst
 from frontend.ir.typing import IRGeneratorABC, StatementGeneratorABC
 from frontend.syntax.ast import *
+from frontend.syntax.ast import WhileStatement
 
 
 class StatementGenerator(StatementGeneratorABC):
@@ -18,6 +20,7 @@ class StatementGenerator(StatementGeneratorABC):
 
     def __init__(self, generator: IRGeneratorABC):
         self.generator = generator
+        self.loop_generator = LoopGenerator(generator)
 
     def generate_expression_statement(self, node: ExpressionStatement) -> None:
         """Generate LLVM IR for an expression statement.
@@ -116,129 +119,19 @@ class StatementGenerator(StatementGeneratorABC):
         self.generator.builder.position_at_end(merge_block)
 
     def generate_while_statement(self, node: WhileStatement) -> None:
-        """Generate LLVM IR for a while statement.
-
-        Args:
-            node (WhileStatement): The while statement node
-        """
-        loop_cond_block = self.generator.func.append_basic_block(name="while.cond")
-        loop_body_block = self.generator.func.append_basic_block(name="while.body")
-        loop_end_block = self.generator.func.append_basic_block(name="while.end")
-
-        self.generator.builder.branch(loop_cond_block)
-
-        self.generator.builder.position_at_end(loop_cond_block)
-        cond_val = self.generator.generate_expression(node.condition)
-        self.generator.builder.cbranch(cond_val, loop_body_block, loop_end_block)
-
-        self.generator.builder.position_at_end(loop_body_block)
-        self.generate_block_statement(node.body)
-        self.generator.builder.branch(loop_cond_block)
-
-        self.generator.builder.position_at_end(loop_end_block)
+        return self.loop_generator.generate_while_statement(node)
 
     def generate_each_statement(self, node: EachStatement) -> None:
-        """Generate LLVM IR for an each statement.
-
-        Args:
-            node (EachStatement): The each statement node
-        """
-        loop_entry_block = self.generator.func.append_basic_block(name="each.entry")
-        self.generator.builder.branch(loop_entry_block)
-        self.generator.builder.position_at_end(loop_entry_block)
-
-        index_var = self.generator.builder.alloca(IRType.int(32), name="index")
-        self.generator.builder.store(ir.Constant(IRType.int(32), 0), index_var)
-
-        array_struct_ptr = self.generator.generate_expression(node.iterable)
-
-        size_ptr = self.generator.builder.gep(
-            array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)],
-        )
-        array_length = self.generator.builder.load(size_ptr, name="array_length")
-
-        data_field_ptr = self.generator.builder.gep(
-            array_struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 2)],
-        )
-        data_ptr = self.generator.builder.load(data_field_ptr, name="data_ptr")
-
-        loop_cond_block = self.generator.func.append_basic_block(name="each.cond")
-        self.generator.builder.branch(loop_cond_block)
-        self.generator.builder.position_at_end(loop_cond_block)
-
-        index_val = self.generator.builder.load(index_var, name="index_val")
-        cond = self.generator.builder.icmp_signed(
-            "<", index_val, array_length, name="loop_cond"
-        )
-
-        loop_body_block = self.generator.func.append_basic_block(name="each.body")
-        loop_end_block = self.generator.func.append_basic_block(name="each.end")
-
-        self.generator.builder.cbranch(cond, loop_body_block, loop_end_block)
-
-        self.generator.builder.position_at_end(loop_body_block)
-
-        self.generator.symbol_table[node.variable] = self.generator.builder.gep(
-            data_ptr, [index_val]
-        )
-
-        self.generate_block_statement(node.body)
-
-        next_index = self.generator.builder.add(
-            index_val, ir.Constant(IRType.int(32), 1), name="next_index"
-        )
-
-        self.generator.builder.store(next_index, index_var)
-        self.generator.builder.branch(loop_cond_block)
-        self.generator.builder.position_at_end(loop_end_block)
+        return self.loop_generator.generate_each_statement(node)
 
     def generate_range_statement(self, node: RangeStatement) -> None:
-        """Generate LLVM IR for a range statement.
+        return self.loop_generator.generate_range_statement(node)
 
-        Args:
-            node (RangeStatement): The range statement node
-        """
-        loop_entry_block = self.generator.func.append_basic_block(name="range.entry")
-        self.generator.builder.branch(loop_entry_block)
-        self.generator.builder.position_at_end(loop_entry_block)
+    def generate_halt_statement(self, _node: HaltStatement) -> None:
+        return self.loop_generator.generate_halt_statement(_node)
 
-        loop_var = self.generator.builder.alloca(IRType.int(32), name=node.identifier)
-        start_val = self.generator.generate_expression(node.start)
-        self.generator.builder.store(start_val, loop_var)
-
-        loop_cond_block = self.generator.func.append_basic_block(name="range.cond")
-        self.generator.builder.branch(loop_cond_block)
-        self.generator.builder.position_at_end(loop_cond_block)
-
-        loop_var_val = self.generator.builder.load(
-            loop_var, name=f"{node.identifier}_val"
-        )
-        end_val = self.generator.generate_expression(node.end)
-        cond = self.generator.builder.icmp_signed(
-            "<", loop_var_val, end_val, name="loop_cond"
-        )
-
-        loop_body_block = self.generator.func.append_basic_block(name="range.body")
-        loop_end_block = self.generator.func.append_basic_block(name="range.end")
-
-        self.generator.builder.cbranch(cond, loop_body_block, loop_end_block)
-
-        self.generator.builder.position_at_end(loop_body_block)
-
-        self.generator.symbol_table[node.identifier] = loop_var
-        self.generate_block_statement(node.body)
-
-        increment_val = self.generator.generate_expression(node.increment)
-        next_val = self.generator.builder.add(
-            loop_var_val, increment_val, name=f"{node.identifier}_next"
-        )
-        self.generator.builder.store(next_val, loop_var)
-
-        self.generator.builder.branch(loop_cond_block)
-
-        self.generator.builder.position_at_end(loop_end_block)
+    def generate_skip_statement(self, _node: SkipStatement) -> None:
+        return self.loop_generator.generate_skip_statement(_node)
 
     def generate_echo_statement(self, node: EchoStatement) -> None:
         """Generate LLVM IR for an echo statement.
