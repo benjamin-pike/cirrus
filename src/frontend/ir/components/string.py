@@ -17,14 +17,6 @@ class StringGenerator(StringGeneratorABC):
         self.generator = generator
 
     def generate_string_literal(self, node: StringLiteral) -> ir.Value:
-        """Generate LLVM IR for a string literal.
-
-        Args:
-            node (StringLiteral): The string literal node
-
-        Returns:
-            ir.Value: The bitcasted global variable pointer to the string literal
-        """
         str_val = node.value.encode("utf8") + b"\0"
         str_const = ir.Constant(
             ir.ArrayType(IRType.int(8), len(str_val)), bytearray(str_val)
@@ -35,22 +27,11 @@ class StringGenerator(StringGeneratorABC):
         str_global.global_constant = True
         str_global.initializer = str_const
 
-        return self.generator.builder.bitcast(str_global, IRType.int(8).as_pointer())
+        return self.generator.builder.bitcast(str_global, IRType.pointer(None))
 
     def compare_strings(
         self, left: ir.Value, right: ir.Value, cmp_op: str
     ) -> ir.Instruction:
-        """Generate LLVM IR to compare two strings.
-
-        Args:
-            left (ir.Value): The left string to compare
-            right (ir.Value): The right string to compare
-            cmp_op (str): The comparison operator
-
-        Returns:
-            ir.Instruction: The comparison instruction
-        """
-
         strcmp_res = self.generator.builder.call(
             self.generator.module.get_global("strcmp"), [left, right]
         )
@@ -62,15 +43,6 @@ class StringGenerator(StringGeneratorABC):
         )
 
     def concat_strings(self, left: ir.Value, right: ir.Value) -> ir.Value:
-        """Generate LLVM IR to concatenate two strings.
-
-        Args:
-            left (ir.Value): The left string to concatenate
-            right (ir.Value): The right string to concatenate
-
-        Returns:
-            ir.Value: The pointer to the concatenated string
-        """
         left_len = self.generator.builder.call(
             self.generator.module.get_global("strlen"), [left]
         )

@@ -5,6 +5,7 @@ ignore=setup.py,tests
 disable=
     too-few-public-methods,
     too-many-arguments,
+    too-many-instance-attributes,
     too-many-return-statements,
     wildcard-import,
     unused-wildcard-import,
@@ -12,6 +13,6 @@ disable=
     missing-module-docstring,
     broad-exception-caught,
     super-init-not-called,
-    no-name-in-module
+    no-name-in-module,
 
 max-line-length=88

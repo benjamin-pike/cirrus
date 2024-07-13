@@ -154,9 +154,18 @@ def test_array_declaration(capfd: Capfd) -> None:
         echo numbers[2];
     """
     check(capfd)(code, "30")
+    
+def test_array_methods_simple(capfd: Capfd) -> None:
+    code = """
+        str[] names = ['Alice', 'Bob', 'Charlie'];
+        
+        echo names.push('Dave').pop();
+        echo names.extract(1);
+    """
+    
+    check(capfd)(code, "Dave\nBob")    
 
-
-def test_array_methods(capfd: Capfd) -> None:
+def test_array_methods_complex(capfd: Capfd) -> None:
     code = """
         int[] numbers = [10, 20, 30, 40, 50];
         
@@ -296,3 +305,10 @@ def test_skip_statement(capfd: Capfd) -> None:
         code,
         "Alice\nBob\nCharlie\nAlice\nBob\nCharlie\nAlice\nCharlie\nAlice\nBob\nCharlie",
     )
+
+# Hash Types
+def test_set_declaration(capfd: Capfd) -> None:
+    code = """
+        str{} names = {'Alice', 'Bob', 'Charlie'};
+    """
+    check(capfd)(code, "")

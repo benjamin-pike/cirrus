@@ -5,7 +5,6 @@
 # pyright: reportUnknownMemberType=false
 
 from llvmlite import ir
-from frontend.ir.components.loop import LoopGenerator
 from frontend.ir.helpers import get_ir_type
 from frontend.ir.types import IRType, NullPointerConst
 from frontend.ir.typing import IRGeneratorABC, StatementGeneratorABC
@@ -17,12 +16,6 @@ class StatementGenerator(StatementGeneratorABC):
 
     def __init__(self, generator: IRGeneratorABC):
         self.generator = generator
-        self.loop_generator = LoopGenerator(generator)
-
-    def __getattr__(self, name: str):
-        if hasattr(self.loop_generator, name):
-            return getattr(self.loop_generator, name)
-        raise AttributeError(f"StatementGenerator object has no attribute `{name}`")
 
     def generate_expression_statement(self, node: ExpressionStatement) -> None:
         self.generator.generate_expression(node.expression)
@@ -36,16 +29,11 @@ class StatementGenerator(StatementGeneratorABC):
         self.generator.symbol_table[node.name] = var_ptr
 
     def generate_function_declaration(self, node: FunctionDeclaration) -> None:
-        parent = self.generator.builder
-
         func_type = get_ir_type(node.function_type)
         func = ir.Function(self.generator.module, func_type.pointee, node.name)
-
-        entry = func.append_basic_block("entry")
-        self.generator.builder = ir.IRBuilder(entry)
-        self.generator.func = func
-        self.generator.block = entry
         self.generator.symbol_table[node.name] = func
+
+        self.generator.enter_function(func)
 
         for i, (param_name, _) in enumerate(node.function_type.param_types):
             arg = func.args[i]
@@ -55,7 +43,7 @@ class StatementGenerator(StatementGeneratorABC):
 
         self.generator.generate_statement(node.body)
 
-        self.generator.builder = parent
+        self.generator.exit_function()
 
     def generate_return_statement(self, node: ReturnStatement) -> None:
         if node.expression is None:

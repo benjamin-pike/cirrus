@@ -41,6 +41,32 @@ class ArrayGeneratorABC(ABC):
         """
 
 
+class SetGeneratorABC(ABC):
+    """Abstract base class for set generators"""
+
+    @abstractmethod
+    def generate_set_literal(self, node: SetLiteral) -> ir.Value:
+        """Generate LLVM IR for a set literal.
+
+        Args:
+            node (SetLiteral): The set literal node
+
+        Returns:
+            ir.Value: The LLVM IR value (pointer to set struct)
+        """
+
+    @abstractmethod
+    def generate_set_method_call(self, node: MethodCallExpression) -> ir.Value:
+        """Generate LLVM IR for a set method call.
+
+        Args:
+            node (MethodCallExpression): The method call expression node
+
+        Returns:
+            ir.Value: The LLVM IR value of the method call result
+        """
+
+
 class StringGeneratorABC(ABC):
     """Abstract base class for string generators"""
 
@@ -106,17 +132,6 @@ class ExpressionGeneratorABC(ABC):
 
         Returns:
             ir.Value: The LLVM IR bool value (constant)
-        """
-
-    @abstractmethod
-    def generate_string_literal(self, node: StringLiteral) -> ir.Value:
-        """Generate LLVM IR for a string literal.
-
-        Args:
-            node (StringLiteral): The string literal node
-
-        Returns:
-            ir.Value: The bitcasted global variable pointer to the string literal
         """
 
     @abstractmethod
@@ -313,10 +328,16 @@ class IRGeneratorABC(ABC):
     func: ir.Function
     block: ir.Block
 
+    func_stack: list[dict[str, ir.Function | ir.Block | ir.IRBuilder]]
+
     target_data: llvm.TargetData
 
     statement_generator: StatementGeneratorABC
     expression_generator: ExpressionGeneratorABC
+
+    loop_generator: LoopGeneratorABC
+    array_generator: ArrayGeneratorABC
+    string_generator: StringGeneratorABC
 
     symbol_table: dict[str, ir.Value]
 
@@ -331,3 +352,11 @@ class IRGeneratorABC(ABC):
     @abstractmethod
     def generate_expression(self, node: Expression) -> ir.Value:
         """Generate LLVM IR from an expression node."""
+
+    @abstractmethod
+    def enter_function(self, func: ir.Function) -> None:
+        """Enter a new function scope."""
+
+    @abstractmethod
+    def exit_function(self) -> None:
+        """Exit the current function scope."""
