@@ -6,8 +6,7 @@
 
 
 from llvmlite import ir
-from frontend.ir.components.array import ArrayGenerator
-from frontend.ir.components.string import StringGenerator
+
 from frontend.ir.typing import ExpressionGeneratorABC, IRGeneratorABC
 from frontend.ir.types import *
 from frontend.syntax.ast import *
@@ -19,15 +18,6 @@ class ExpressionGenerator(ExpressionGeneratorABC):
 
     def __init__(self, generator: IRGeneratorABC):
         self.generator = generator
-        self.string_generator = StringGenerator(generator)
-        self.array_generator = ArrayGenerator(generator)
-
-    def __getattr__(self, name: str):
-        if hasattr(self.string_generator, name):
-            return getattr(self.string_generator, name)
-        if hasattr(self.array_generator, name):
-            return getattr(self.array_generator, name)
-        raise AttributeError(f"ExpressionGenerator object has no attribute `{name}`")
 
     def generate_numeric_literal(self, node: NumericLiteral) -> ir.Value:
         if isinstance(node.value, int):
@@ -36,9 +26,6 @@ class ExpressionGenerator(ExpressionGeneratorABC):
 
     def generate_boolean_literal(self, node: BooleanLiteral) -> ir.Value:
         return ir.Constant(IRType.bool(), node.value)
-
-    def generate_string_literal(self, node: StringLiteral) -> ir.Value:
-        return self.string_generator.generate_string_literal(node)
 
     def generate_null_literal(self, _node: NullLiteral) -> ir.Value:
         return ir.Constant(IRType.null(), None)
@@ -152,11 +139,15 @@ class ExpressionGenerator(ExpressionGeneratorABC):
         if node.left.type == PrimitiveType(TokenType.STR):
             match node.operator:
                 case TokenType.PLUS:
-                    return self.string_generator.concat_strings(left, right)
+                    return self.generator.string_generator.concat_strings(left, right)
                 case TokenType.EQUAL:
-                    return self.string_generator.compare_strings(left, right, "==")
+                    return self.generator.string_generator.compare_strings(
+                        left, right, "=="
+                    )
                 case TokenType.NOT_EQUAL:
-                    return self.string_generator.compare_strings(left, right, "!=")
+                    return self.generator.string_generator.compare_strings(
+                        left, right, "!="
+                    )
                 case _:
                     raise NotImplementedError(
                         f"Binary operator `{node.operator}` for str not implemented"
@@ -191,6 +182,8 @@ class ExpressionGenerator(ExpressionGeneratorABC):
 
     def generate_method_call_expression(self, node: MethodCallExpression) -> ir.Value:
         if isinstance(node.composite.type, ArrayType):
-            return self.array_generator.generate_array_method_call(node)
+            return self.generator.array_generator.generate_array_method_call(node)
+        # if isinstance(node.composite.type, SetType):
+        #     return self.set_generator.generate_set_method_call(node)
 
         raise NotImplementedError("Method call expression not implemented")

@@ -23,6 +23,8 @@ class LoopGenerator:
         Args:
             node (WhileStatement): The while statement node
         """
+        self._enter_loop()
+
         # Generate loop blocks, append them to loop stack and branch to condition block
         cond_block, body_block, _, end_block = self._configure_loop()
 
@@ -44,6 +46,8 @@ class LoopGenerator:
         Args:
             node (EachStatement): The each statement node
         """
+        self._enter_loop()
+
         # Allocate memory for the index variable and initialize it to 0
         index_ptr = self.generator.builder.alloca(IRType.int(32))
         self.generator.builder.store(ir.Constant(IRType.int(32), 0), index_ptr)
@@ -92,6 +96,8 @@ class LoopGenerator:
         Args:
             node (RangeStatement): The range statement node
         """
+        self._enter_loop()
+
         # Allocate memory for the loop variable and initialize it to the start value
         loop_var_ptr = self.generator.builder.alloca(IRType.int(32))
         start_val = self.generator.generate_expression(node.start)
@@ -142,6 +148,11 @@ class LoopGenerator:
         self.generator.builder.branch(next_block if next_block else cond_block)
 
     # Helper methods
+    def _enter_loop(self):
+        loop_entry_block = self.generator.func.append_basic_block()
+        self.generator.builder.branch(loop_entry_block)
+        self.generator.builder.position_at_end(loop_entry_block)
+
     def _configure_loop(self, has_next: bool = False):
         """Generate loop blocks, append to loop stack, and branch to condition block."""
         cond_block = self.generator.func.append_basic_block()
